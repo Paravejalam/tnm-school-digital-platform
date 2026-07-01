@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Core;
+
+use App\Config\ConfigLoader;
+use App\Config\EnvironmentLoader;
+use App\Database\ConnectionManager;
+use App\Http\Pipeline;
+use App\Http\RequestHelper;
+use App\Support\AppContainer;
+use App\Support\ErrorHandler;
+use App\Support\Logger;
+use PDO;
+use Throwable;
+
+class Kernel
+{
+    private string $basePath;
+    private AppContainer $container;
+    private ?Logger $logger = null;
+    private ?PDO $database = null;
+    private ?RequestHelper $request = null;
+
+    public function __construct(string $basePath)
+    {
+        $this->basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $this->container = new AppContainer();
+    }
+
+    public function bootstrap(): self
+    {
+        EnvironmentLoader::load($this->basePath . '/.env');
+        ConfigLoader::loadDirectory($this->basePath . '/config');
+
+        $appConfig = ConfigLoader::get('app', []);
+        $appSettings = $appConfig['app'] ?? [];
+        $dbConfig = ConfigLoader::get('database', []);
+
+        $this->container->set('config', ConfigLoader::all());
+        $this->logger = new Logger($this->basePath . '/logs/app.log', 'DEBUG');
+        $this->container->set('logger', $this->logger);
+        $this->request = RequestHelper::fromGlobals();
+        $this->container->set('request', $this->request);
+
+        if (!empty($dbConfig)) {
+            $this->database = ConnectionManager::getInstance()->connect([
+                'host' => $dbConfig['host'] ?? '127.0.0.1',
+                'port' => $dbConfig['port'] ?? 3306,
+                'database' => $dbConfig['database'] ?? $dbConfig['name'] ?? 'tnm_school_platform',
+                'username' => $dbConfig['username'] ?? $dbConfig['user'] ?? 'root',
+                'password' => $dbConfig['password'] ?? '',
+            ]);
+            $this->container->set('database', $this->database);
+        }
+
+        $this->container->set('errorHandler', new ErrorHandler((bool) ($appSettings['debug'] ?? false)));
+        $this->container->set('router', new Router());
+        $this->container->set('pipeline', new Pipeline());
+
+        set_exception_handler(function (Throwable $exception): void {
+            $handler = $this->container->get('errorHandler');
+            if ($handler instanceof ErrorHandler) {
+                $response = $handler->handle($exception);
+                http_response_code(500);
+                echo json_encode($response, JSON_UNESCAPED_SLASHES);
+                return;
+            }
+
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $exception->getMessage()], JSON_UNESCAPED_SLASHES);
+        });
+
+        return $this;
+    }
+
+    public function getContainer(): AppContainer
+    {
+        return $this->container;
+    }
+
+    public function handle(): array
+    {
+        $router = $this->container->get('router');
+        if (!$router instanceof Router) {
+            return ['success' => false, 'message' => 'Router unavailable'];
+        }
+
+        $request = $this->container->get('request');
+        if (!$request instanceof RequestHelper) {
+            return ['success' => false, 'message' => 'Request unavailable'];
+        }
+
+        $pipeline = $this->container->get('pipeline');
+        if (!$pipeline instanceof Pipeline) {
+            return ['success' => false, 'message' => 'Pipeline unavailable'];
+        }
+
+        return $pipeline->handle(fn (): array => $router->dispatch($request->method(), $request->path()));
+    }
+}

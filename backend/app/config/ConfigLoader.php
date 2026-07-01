@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Config;
 
 class ConfigLoader
@@ -13,7 +15,8 @@ class ConfigLoader
         }
 
         $name = pathinfo($path, PATHINFO_FILENAME);
-        self::$config[$name] = require $path;
+        $loaded = require $path;
+        self::$config[$name] = is_array($loaded) ? $loaded : [];
     }
 
     public static function loadDirectory(string $directory): void
@@ -22,7 +25,7 @@ class ConfigLoader
             return;
         }
 
-        $files = glob($directory . '/*.php');
+        $files = glob($directory . DIRECTORY_SEPARATOR . '*.php');
         if ($files === false) {
             return;
         }

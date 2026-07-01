@@ -28,11 +28,24 @@ class RequestHelper
             $jsonBody = null;
         }
 
+        $headers = [];
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+        } elseif (isset($_SERVER)) {
+            $headers = [];
+            foreach ($_SERVER as $key => $value) {
+                if (str_starts_with($key, 'HTTP_')) {
+                    $headerName = str_replace('HTTP_', '', $key);
+                    $headers[str_replace('_', '-', $headerName)] = $value;
+                }
+            }
+        }
+
         return new self(
             $_SERVER,
             $_GET,
             $_POST,
-            getallheaders(),
+            $headers,
             $jsonBody
         );
     }
