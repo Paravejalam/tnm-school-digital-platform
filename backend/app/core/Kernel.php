@@ -2,6 +2,12 @@
 
 namespace App\Core;
 
+use App\Auth\AuthController;
+use App\Auth\AuthMiddleware;
+use App\Auth\AuthService;
+use App\Auth\AuthValidator;
+use App\Auth\JwtHelper;
+use App\Auth\PasswordHasher;
 use App\Config\ConfigLoader;
 use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
@@ -56,6 +62,18 @@ class Kernel
         $this->container->set('errorHandler', new ErrorHandler((bool) ($appSettings['debug'] ?? false)));
         $this->container->set('router', new Router());
         $this->container->set('pipeline', new Pipeline());
+
+        $passwordHasher = new PasswordHasher();
+        $jwtHelper = new JwtHelper();
+        $authValidator = new AuthValidator();
+        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator);
+
+        $this->container->set('auth.passwordHasher', $passwordHasher);
+        $this->container->set('auth.jwtHelper', $jwtHelper);
+        $this->container->set('auth.validator', $authValidator);
+        $this->container->set('auth.service', $authService);
+        $this->container->set('auth.controller', new AuthController($authService));
+        $this->container->set('auth.middleware', new AuthMiddleware());
 
         set_exception_handler(function (Throwable $exception): void {
             $handler = $this->container->get('errorHandler');
