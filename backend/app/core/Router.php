@@ -8,6 +8,7 @@ use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
 use App\Student\StudentController;
+use App\Teacher\TeacherController;
 use App\Support\AppContainer;
 
 class Router
@@ -71,6 +72,30 @@ class Router
             }
         }
 
+        if ($normalizedMethod === 'GET' && $normalizedPath === '/teachers') {
+            return $this->teacherController()->index($this->request($request));
+        }
+
+        if ($normalizedMethod === 'POST' && $normalizedPath === '/teachers') {
+            return $this->teacherController()->store($this->request($request));
+        }
+
+        if (preg_match('#^/teachers/(\d+)$#', $normalizedPath, $matches) === 1) {
+            $teacherId = (int) $matches[1];
+
+            if ($normalizedMethod === 'GET') {
+                return $this->teacherController()->show($teacherId);
+            }
+
+            if ($normalizedMethod === 'PUT' || $normalizedMethod === 'PATCH') {
+                return $this->teacherController()->update($teacherId, $this->request($request));
+            }
+
+            if ($normalizedMethod === 'DELETE') {
+                return $this->teacherController()->destroy($teacherId);
+            }
+        }
+
         return ResponseHelper::error('Route not found', 404);
     }
 
@@ -86,6 +111,13 @@ class Router
         $controller = $this->container?->get(StudentController::class) ?? $this->container?->get('student.controller');
 
         return $controller instanceof StudentController ? $controller : new StudentController();
+    }
+
+    private function teacherController(): TeacherController
+    {
+        $controller = $this->container?->get(TeacherController::class) ?? $this->container?->get('teacher.controller');
+
+        return $controller instanceof TeacherController ? $controller : new TeacherController();
     }
 
     private function request(?RequestHelper $request): RequestHelper
