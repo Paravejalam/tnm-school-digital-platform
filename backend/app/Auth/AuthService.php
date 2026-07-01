@@ -2,7 +2,7 @@
 
 namespace App\Auth;
 
-class AuthService
+class AuthService implements AuthServiceInterface
 {
     public function __construct(
         private PasswordHasher $passwordHasher,
