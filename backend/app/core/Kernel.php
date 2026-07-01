@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
 use App\Config\ConfigLoader;
 use App\Config\EnvironmentLoader;
@@ -55,10 +56,11 @@ class Kernel
         }
 
         $this->container->set('errorHandler', new ErrorHandler((bool) ($appSettings['debug'] ?? false)));
-        $this->container->set('router', new Router());
         $this->container->set('pipeline', new Pipeline());
 
         (new AuthServiceProvider())->register($this->container);
+
+        $this->container->set('router', new Router($this->container));
 
         set_exception_handler(function (Throwable $exception): void {
             $handler = $this->container->get('errorHandler');
@@ -98,6 +100,21 @@ class Kernel
             return ['success' => false, 'message' => 'Pipeline unavailable'];
         }
 
-        return $pipeline->handle(fn (): array => $router->dispatch($request->method(), $request->path()));
+        return $pipeline->handle(
+            fn (): array => $router->dispatch($request->method(), $request->path(), $request),
+            $this->middlewareFor($request),
+            $request
+        );
+    }
+
+    private function middlewareFor(RequestHelper $request): array
+    {
+        if ($request->method() === 'POST' && rtrim($request->path(), '/') === '/auth/logout') {
+            $middleware = $this->container->get(AuthMiddleware::class);
+
+            return $middleware instanceof AuthMiddleware ? [$middleware] : [];
+        }
+
+        return [];
     }
 }

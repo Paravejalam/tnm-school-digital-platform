@@ -6,11 +6,14 @@ namespace App\Http;
 
 class Pipeline
 {
-    /**
-     * Executes the provided callback as the final step of the request lifecycle.
-     */
-    public function handle(callable $callback): mixed
+    public function handle(callable $callback, array $middleware = [], mixed $request = null): mixed
     {
-        return $callback();
+        $next = $callback;
+
+        foreach (array_reverse($middleware) as $handler) {
+            $next = fn (): mixed => $handler->handle($request, $next);
+        }
+
+        return $next();
     }
 }

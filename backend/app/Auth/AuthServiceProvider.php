@@ -32,7 +32,7 @@ class AuthServiceProvider
         $container->set(AuthService::class, $authService);
         $container->set(AuthServiceInterface::class, $authService);
         $container->set(AuthController::class, new AuthController($authService));
-        $container->set(AuthMiddleware::class, new AuthMiddleware());
+        $container->set(AuthMiddleware::class, new AuthMiddleware($jwtHelper));
 
         $container->set('auth.passwordHasher', $passwordHasher);
         $container->set('auth.jwtHelper', $jwtHelper);
