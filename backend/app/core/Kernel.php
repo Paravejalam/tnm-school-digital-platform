@@ -4,17 +4,22 @@ namespace App\Core;
 
 use App\AcademicClass\AcademicClassServiceProvider;
 use App\AcademicSession\AcademicSessionServiceProvider;
+use App\Attendance\AttendanceServiceProvider;
+use App\AttendanceRecord\AttendanceRecordServiceProvider;
 use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
 use App\Config\ConfigLoader;
 use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
 use App\Http\Pipeline;
+use App\HolidayCalendar\HolidayCalendarServiceProvider;
 use App\Http\RequestHelper;
+use App\Period\PeriodServiceProvider;
 use App\Section\SectionServiceProvider;
 use App\Student\StudentServiceProvider;
 use App\Subject\SubjectServiceProvider;
 use App\Teacher\TeacherServiceProvider;
+use App\Timetable\TimetableServiceProvider;
 use App\Support\AppContainer;
 use App\Support\ErrorHandler;
 use App\Support\Logger;
@@ -71,6 +76,11 @@ class Kernel
         (new AcademicClassServiceProvider())->register($this->container);
         (new SectionServiceProvider())->register($this->container);
         (new SubjectServiceProvider())->register($this->container);
+        (new AttendanceServiceProvider())->register($this->container);
+        (new AttendanceRecordServiceProvider())->register($this->container);
+        (new TimetableServiceProvider())->register($this->container);
+        (new PeriodServiceProvider())->register($this->container);
+        (new HolidayCalendarServiceProvider())->register($this->container);
 
         $this->container->set('router', new Router($this->container));
 
@@ -122,7 +132,7 @@ class Kernel
     private function middlewareFor(RequestHelper $request): array
     {
         $path = rtrim($request->path(), '/') ?: '/';
-        $protectedPrefixes = ['/students', '/teachers', '/academic-sessions', '/classes', '/sections', '/subjects'];
+        $protectedPrefixes = ['/students', '/teachers', '/academic-sessions', '/classes', '/sections', '/subjects', '/attendance', '/attendance-records', '/timetables', '/periods', '/holiday-calendars'];
         $requiresAuth = $request->method() === 'POST' && $path === '/auth/logout';
 
         foreach ($protectedPrefixes as $prefix) {

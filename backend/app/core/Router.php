@@ -6,13 +6,18 @@ namespace App\Core;
 
 use App\AcademicClass\AcademicClassController;
 use App\AcademicSession\AcademicSessionController;
+use App\Attendance\AttendanceController;
+use App\AttendanceRecord\AttendanceRecordController;
 use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
+use App\Period\PeriodController;
 use App\Section\SectionController;
 use App\Student\StudentController;
 use App\Subject\SubjectController;
 use App\Teacher\TeacherController;
+use App\Timetable\TimetableController;
+use App\HolidayCalendar\HolidayCalendarController;
 use App\Support\AppContainer;
 
 class Router
@@ -100,6 +105,11 @@ class Router
             '/classes' => [AcademicClassController::class, 'academicclass.controller'],
             '/sections' => [SectionController::class, 'section.controller'],
             '/subjects' => [SubjectController::class, 'subject.controller'],
+            '/attendance' => [AttendanceController::class, 'attendance.controller'],
+            '/attendance-records' => [AttendanceRecordController::class, 'attendancerecord.controller'],
+            '/timetables' => [TimetableController::class, 'timetable.controller'],
+            '/periods' => [PeriodController::class, 'period.controller'],
+            '/holiday-calendars' => [HolidayCalendarController::class, 'holidaycalendar.controller'],
         ];
 
         foreach ($resources as $basePath => [$className, $serviceKey]) {
