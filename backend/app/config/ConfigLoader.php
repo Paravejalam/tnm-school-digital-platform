@@ -12,7 +12,28 @@ class ConfigLoader
             return;
         }
 
-        self::$config = require $path;
+        $name = pathinfo($path, PATHINFO_FILENAME);
+        self::$config[$name] = require $path;
+    }
+
+    public static function loadDirectory(string $directory): void
+    {
+        if (!is_dir($directory)) {
+            return;
+        }
+
+        $files = glob($directory . '/*.php');
+        if ($files === false) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            if (basename($file) === 'bootstrap.php') {
+                continue;
+            }
+
+            self::load($file);
+        }
     }
 
     public static function get(string $key, mixed $default = null): mixed
@@ -29,5 +50,10 @@ class ConfigLoader
         }
 
         return $value;
+    }
+
+    public static function all(): array
+    {
+        return self::$config;
     }
 }

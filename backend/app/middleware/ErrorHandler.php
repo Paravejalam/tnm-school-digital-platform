@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Helpers\JsonResponse;
+use Throwable;
 
 class ErrorHandler
 {
