@@ -9,6 +9,7 @@ use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
 use App\Http\Pipeline;
 use App\Http\RequestHelper;
+use App\Student\StudentServiceProvider;
 use App\Support\AppContainer;
 use App\Support\ErrorHandler;
 use App\Support\Logger;
@@ -59,6 +60,7 @@ class Kernel
         $this->container->set('pipeline', new Pipeline());
 
         (new AuthServiceProvider())->register($this->container);
+        (new StudentServiceProvider())->register($this->container);
 
         $this->container->set('router', new Router($this->container));
 
@@ -109,7 +111,10 @@ class Kernel
 
     private function middlewareFor(RequestHelper $request): array
     {
-        if ($request->method() === 'POST' && rtrim($request->path(), '/') === '/auth/logout') {
+        $path = rtrim($request->path(), '/') ?: '/';
+        $requiresAuth = ($request->method() === 'POST' && $path === '/auth/logout') || str_starts_with($path, '/students');
+
+        if ($requiresAuth) {
             $middleware = $this->container->get(AuthMiddleware::class);
 
             return $middleware instanceof AuthMiddleware ? [$middleware] : [];

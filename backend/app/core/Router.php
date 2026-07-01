@@ -7,6 +7,7 @@ namespace App\Core;
 use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
+use App\Student\StudentController;
 use App\Support\AppContainer;
 
 class Router
@@ -46,6 +47,30 @@ class Router
             return $this->authController()->logout($this->request($request));
         }
 
+        if ($normalizedMethod === 'GET' && $normalizedPath === '/students') {
+            return $this->studentController()->index($this->request($request));
+        }
+
+        if ($normalizedMethod === 'POST' && $normalizedPath === '/students') {
+            return $this->studentController()->store($this->request($request));
+        }
+
+        if (preg_match('#^/students/(\d+)$#', $normalizedPath, $matches) === 1) {
+            $studentId = (int) $matches[1];
+
+            if ($normalizedMethod === 'GET') {
+                return $this->studentController()->show($studentId);
+            }
+
+            if ($normalizedMethod === 'PUT' || $normalizedMethod === 'PATCH') {
+                return $this->studentController()->update($studentId, $this->request($request));
+            }
+
+            if ($normalizedMethod === 'DELETE') {
+                return $this->studentController()->destroy($studentId);
+            }
+        }
+
         return ResponseHelper::error('Route not found', 404);
     }
 
@@ -54,6 +79,13 @@ class Router
         $controller = $this->container?->get(AuthController::class) ?? $this->container?->get('auth.controller');
 
         return $controller instanceof AuthController ? $controller : new AuthController();
+    }
+
+    private function studentController(): StudentController
+    {
+        $controller = $this->container?->get(StudentController::class) ?? $this->container?->get('student.controller');
+
+        return $controller instanceof StudentController ? $controller : new StudentController();
     }
 
     private function request(?RequestHelper $request): RequestHelper
