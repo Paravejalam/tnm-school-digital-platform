@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\AcademicClass\AcademicClassServiceProvider;
+use App\AcademicSession\AcademicSessionServiceProvider;
 use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
 use App\Config\ConfigLoader;
@@ -9,7 +11,9 @@ use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
 use App\Http\Pipeline;
 use App\Http\RequestHelper;
+use App\Section\SectionServiceProvider;
 use App\Student\StudentServiceProvider;
+use App\Subject\SubjectServiceProvider;
 use App\Teacher\TeacherServiceProvider;
 use App\Support\AppContainer;
 use App\Support\ErrorHandler;
@@ -63,6 +67,10 @@ class Kernel
         (new AuthServiceProvider())->register($this->container);
         (new StudentServiceProvider())->register($this->container);
         (new TeacherServiceProvider())->register($this->container);
+        (new AcademicSessionServiceProvider())->register($this->container);
+        (new AcademicClassServiceProvider())->register($this->container);
+        (new SectionServiceProvider())->register($this->container);
+        (new SubjectServiceProvider())->register($this->container);
 
         $this->container->set('router', new Router($this->container));
 
@@ -114,7 +122,15 @@ class Kernel
     private function middlewareFor(RequestHelper $request): array
     {
         $path = rtrim($request->path(), '/') ?: '/';
-        $requiresAuth = ($request->method() === 'POST' && $path === '/auth/logout') || str_starts_with($path, '/students') || str_starts_with($path, '/teachers');
+        $protectedPrefixes = ['/students', '/teachers', '/academic-sessions', '/classes', '/sections', '/subjects'];
+        $requiresAuth = $request->method() === 'POST' && $path === '/auth/logout';
+
+        foreach ($protectedPrefixes as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+                $requiresAuth = true;
+                break;
+            }
+        }
 
         if ($requiresAuth) {
             $middleware = $this->container->get(AuthMiddleware::class);

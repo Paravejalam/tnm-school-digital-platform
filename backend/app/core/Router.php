@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\AcademicClass\AcademicClassController;
+use App\AcademicSession\AcademicSessionController;
 use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
+use App\Section\SectionController;
 use App\Student\StudentController;
+use App\Subject\SubjectController;
 use App\Teacher\TeacherController;
 use App\Support\AppContainer;
 
@@ -48,51 +52,32 @@ class Router
             return $this->authController()->logout($this->request($request));
         }
 
-        if ($normalizedMethod === 'GET' && $normalizedPath === '/students') {
-            return $this->studentController()->index($this->request($request));
-        }
+        $resource = $this->resourceController($normalizedPath);
+        if ($resource !== null) {
+            [$basePath, $controller] = $resource;
 
-        if ($normalizedMethod === 'POST' && $normalizedPath === '/students') {
-            return $this->studentController()->store($this->request($request));
-        }
-
-        if (preg_match('#^/students/(\d+)$#', $normalizedPath, $matches) === 1) {
-            $studentId = (int) $matches[1];
-
-            if ($normalizedMethod === 'GET') {
-                return $this->studentController()->show($studentId);
+            if ($normalizedMethod === 'GET' && $normalizedPath === $basePath) {
+                return $controller->index($this->request($request));
             }
 
-            if ($normalizedMethod === 'PUT' || $normalizedMethod === 'PATCH') {
-                return $this->studentController()->update($studentId, $this->request($request));
+            if ($normalizedMethod === 'POST' && $normalizedPath === $basePath) {
+                return $controller->store($this->request($request));
             }
 
-            if ($normalizedMethod === 'DELETE') {
-                return $this->studentController()->destroy($studentId);
-            }
-        }
+            if (preg_match('#^' . preg_quote($basePath, '#') . '/(\d+)$#', $normalizedPath, $matches) === 1) {
+                $id = (int) $matches[1];
 
-        if ($normalizedMethod === 'GET' && $normalizedPath === '/teachers') {
-            return $this->teacherController()->index($this->request($request));
-        }
+                if ($normalizedMethod === 'GET') {
+                    return $controller->show($id);
+                }
 
-        if ($normalizedMethod === 'POST' && $normalizedPath === '/teachers') {
-            return $this->teacherController()->store($this->request($request));
-        }
+                if ($normalizedMethod === 'PUT' || $normalizedMethod === 'PATCH') {
+                    return $controller->update($id, $this->request($request));
+                }
 
-        if (preg_match('#^/teachers/(\d+)$#', $normalizedPath, $matches) === 1) {
-            $teacherId = (int) $matches[1];
-
-            if ($normalizedMethod === 'GET') {
-                return $this->teacherController()->show($teacherId);
-            }
-
-            if ($normalizedMethod === 'PUT' || $normalizedMethod === 'PATCH') {
-                return $this->teacherController()->update($teacherId, $this->request($request));
-            }
-
-            if ($normalizedMethod === 'DELETE') {
-                return $this->teacherController()->destroy($teacherId);
+                if ($normalizedMethod === 'DELETE') {
+                    return $controller->destroy($id);
+                }
             }
         }
 
@@ -106,18 +91,26 @@ class Router
         return $controller instanceof AuthController ? $controller : new AuthController();
     }
 
-    private function studentController(): StudentController
+    private function resourceController(string $path): ?array
     {
-        $controller = $this->container?->get(StudentController::class) ?? $this->container?->get('student.controller');
+        $resources = [
+            '/students' => [StudentController::class, 'student.controller'],
+            '/teachers' => [TeacherController::class, 'teacher.controller'],
+            '/academic-sessions' => [AcademicSessionController::class, 'academicsession.controller'],
+            '/classes' => [AcademicClassController::class, 'academicclass.controller'],
+            '/sections' => [SectionController::class, 'section.controller'],
+            '/subjects' => [SubjectController::class, 'subject.controller'],
+        ];
 
-        return $controller instanceof StudentController ? $controller : new StudentController();
-    }
+        foreach ($resources as $basePath => [$className, $serviceKey]) {
+            if ($path === $basePath || str_starts_with($path, $basePath . '/')) {
+                $controller = $this->container?->get($className) ?? $this->container?->get($serviceKey);
 
-    private function teacherController(): TeacherController
-    {
-        $controller = $this->container?->get(TeacherController::class) ?? $this->container?->get('teacher.controller');
+                return $controller instanceof $className ? [$basePath, $controller] : null;
+            }
+        }
 
-        return $controller instanceof TeacherController ? $controller : new TeacherController();
+        return null;
     }
 
     private function request(?RequestHelper $request): RequestHelper
