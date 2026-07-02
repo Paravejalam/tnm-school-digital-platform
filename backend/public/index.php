@@ -1,22 +1,35 @@
-<?php
+﻿<?php
 
-require_once __DIR__ . '/../config/bootstrap.php';
+declare(strict_types=1);
 
-use App\Http\RequestHelper;
-use App\Support\ErrorHandler;
-use App\Support\Logger;
+/**
+ * T.N. Memorial Public School Digital Platform
+ * Backend Entry Point
+ *
+ * Boot sequence:
+ * Environment -> Configuration -> Container -> Providers -> Router -> Middleware -> Controller -> Response
+ *
+ * Authority: .github/AGENT.md
+ */
 
-try {
-    $request = RequestHelper::fromGlobals();
-    $router = require __DIR__ . '/../routes/api.php';
-    $response = $router->dispatch($request->method(), $request->path());
-    header('Content-Type: application/json');
-    echo json_encode($response, JSON_UNESCAPED_SLASHES);
-} catch (\Throwable $exception) {
-    $logger = new Logger();
-    $logger->error('Unhandled exception', ['message' => $exception->getMessage()]);
-    $handler = new ErrorHandler(true);
-    $response = $handler->handle($exception);
-    header('Content-Type: application/json');
-    echo json_encode($response, JSON_UNESCAPED_SLASHES);
+define('TNM_START', microtime(true));
+define('TNM_BASE_PATH', dirname(__DIR__));
+
+require_once TNM_BASE_PATH . '/config/bootstrap.php';
+
+use App\Core\Kernel;
+
+$kernel = (new Kernel(TNM_BASE_PATH))->bootstrap();
+
+$response = $kernel->handle();
+
+$status = (int) ($response['status'] ?? 200);
+if ($status < 100 || $status > 599) {
+    $status = 200;
 }
+
+http_response_code($status);
+header('Content-Type: application/json; charset=utf-8');
+header('X-Powered-By: TNM-School-Platform');
+
+echo json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
