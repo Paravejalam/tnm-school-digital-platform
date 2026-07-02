@@ -1,0 +1,215 @@
+﻿# =============================================================================
+# T.N. Memorial Public School Digital Platform
+# Docker Compose — Local Development Environment
+# Version: 1.0.0
+# Authority: .github/AGENT.md (Section 4.1 — Docker Governance)
+#
+# Services: website, erp, php, nginx, mysql, phpmyadmin
+# Network : tnm-network (bridge)
+# Volumes : mysql-data, node_modules_website, node_modules_erp, vendor
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PHP 8.3 FPM — Backend API runtime
+  # ---------------------------------------------------------------------------
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: tnm_php
+    restart: unless-stopped
+    volumes:
+      - ../../backend:/var/www/backend
+      - vendor:/var/www/backend/vendor
+      - ./php/php.ini:/usr/local/etc/php/conf.d/tnm-php.ini:ro
+    networks:
+      - tnm-network
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_DEBUG: ${APP_DEBUG}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_CHARSET: utf8mb4
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Nginx — Reverse proxy, PHP handler, Next.js proxy
+  # ---------------------------------------------------------------------------
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: tnm_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ../../backend:/var/www/backend:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - tnm-network
+    depends_on:
+      php:
+        condition: service_healthy
+      website:
+        condition: service_healthy
+      erp:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Website — Public Next.js frontend (port 3000)
+  # ---------------------------------------------------------------------------
+  website:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        APP_DIR: apps/website
+    container_name: tnm_website
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../apps/website:/app
+      - node_modules_website:/app/node_modules
+    networks:
+      - tnm-network
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      PORT: 3000
+    working_dir: /app
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # ERP — Dashboard Next.js frontend (port 3001)
+  # ---------------------------------------------------------------------------
+  erp:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        APP_DIR: apps/erp
+    container_name: tnm_erp
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../../apps/erp:/app
+      - node_modules_erp:/app/node_modules
+    networks:
+      - tnm-network
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      PORT: 3001
+    working_dir: /app
+    command: npm run dev -- -p 3001
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # MySQL 8 — Primary relational database
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: tnm_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/tnm-mysql.cnf:ro
+      - ../../database/schema:/docker-entrypoint-initdb.d:ro
+    networks:
+      - tnm-network
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: UTC
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # phpMyAdmin — Database administration UI (port 8080)
+  # ---------------------------------------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: tnm_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - tnm-network
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# =============================================================================
+# Named Volumes
+# =============================================================================
+volumes:
+  mysql-data:
+    driver: local
+  node_modules_website:
+    driver: local
+  node_modules_erp:
+    driver: local
+  vendor:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  tnm-network:
+    driver: bridge
+    name: tnm-network

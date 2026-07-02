@@ -1,0 +1,54 @@
+﻿# =============================================================================
+# T.N. Memorial Public School Digital Platform
+# Dockerfile.node — Node 22 Frontend Runtime
+# Authority: .github/AGENT.md (Section 4.1 — Docker Governance)
+# Used for both apps/website (port 3000) and apps/erp (port 3001)
+# =============================================================================
+
+FROM node:22-alpine
+
+LABEL maintainer="T.N. Memorial School Platform Team"
+LABEL description="Node 22 frontend runtime for TNM School Digital Platform"
+LABEL version="1.0.0"
+
+# ---------------------------------------------------------------------------
+# Build argument — determines which app is built (apps/website or apps/erp)
+# ---------------------------------------------------------------------------
+ARG APP_DIR=apps/website
+
+# ---------------------------------------------------------------------------
+# System dependencies
+# ---------------------------------------------------------------------------
+RUN apk add --no-cache \
+    wget \
+    curl \
+    git
+
+# ---------------------------------------------------------------------------
+# Working directory
+# ---------------------------------------------------------------------------
+WORKDIR /app
+
+# ---------------------------------------------------------------------------
+# Install dependencies
+# Copy package files first for layer caching
+# ---------------------------------------------------------------------------
+COPY ../../${APP_DIR}/package*.json ./
+
+RUN npm install --legacy-peer-deps
+
+# ---------------------------------------------------------------------------
+# Copy application source
+# ---------------------------------------------------------------------------
+COPY ../../${APP_DIR} .
+
+# ---------------------------------------------------------------------------
+# Expose port (overridden per service in docker-compose.yml)
+# ---------------------------------------------------------------------------
+EXPOSE 3000
+
+# ---------------------------------------------------------------------------
+# Default command — development with hot reload
+# Override in docker-compose.yml per service
+# ---------------------------------------------------------------------------
+CMD ["npm", "run", "dev"]
