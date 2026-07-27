@@ -132,33 +132,58 @@ class AuthService implements AuthServiceInterface
             }
         }
 
-        $this->refreshTokenRepository->revoke($refreshToken);
-
-        $userId = (int) $payload['id'];
-        $user = $this->authRepository->findById($userId);
-        if (!$user instanceof User) {
-            throw new AuthException('User not found.');
+        if (!$this->database instanceof PDO) {
+            throw new AuthException('Database connection unavailable.');
         }
 
-        $role = $this->authRepository->findUserRole($userId);
+        $this->database->beginTransaction();
 
-        $newAccessToken = $this->jwtHelper->issue([
-            'id'    => $user->id(),
-            'email' => $user->email(),
-            'type'  => 'access',
-            'role'  => $role,
-        ]);
-        $this->authRepository->storeToken($user, $newAccessToken);
+        try {
+            $this->refreshTokenRepository->revoke($refreshToken);
 
-        $newRefreshToken = $this->issueRefreshToken($user);
+            $userId = (int) $payload['id'];
+            $user = $this->authRepository->findById($userId);
+            if (!$user instanceof User) {
+                throw new AuthException('User not found.');
+            }
 
-        return new AuthenticatedUser($user, $newAccessToken, $newRefreshToken);
+            $role = $this->authRepository->findUserRole($userId);
+
+            $newAccessToken = $this->jwtHelper->issue([
+                'id'    => $user->id(),
+                'email' => $user->email(),
+                'type'  => 'access',
+                'role'  => $role,
+            ]);
+            $this->authRepository->storeToken($user, $newAccessToken);
+
+            $newRefreshToken = $this->issueRefreshToken($user);
+
+            $this->database->commit();
+
+            return new AuthenticatedUser($user, $newAccessToken, $newRefreshToken);
+        } catch (Throwable $e) {
+            $this->database->rollBack();
+
+            throw new AuthException('Token refresh failed.', 0, $e);
+        }
     }
 
     public function logout(?string $token = null): void
     {
         if ($token !== null && $token !== '') {
             $this->authRepository->revokeToken($token);
+
+            if ($this->refreshTokenRepository instanceof RefreshTokenRepositoryInterface) {
+                try {
+                    $payload = $this->jwtHelper->decode($token);
+                    $userId = isset($payload['id']) ? (int) $payload['id'] : 0;
+                    if ($userId > 0) {
+                        $this->refreshTokenRepository->revokeAllForUser($userId);
+                    }
+                } catch (Throwable) {
+                }
+            }
         }
     }
 
