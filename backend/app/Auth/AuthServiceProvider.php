@@ -18,7 +18,7 @@ class AuthServiceProvider
         $userRepository = new UserRepository($database);
         $tokenRepository = new TokenRepository($database);
         $authRepository = new AuthRepository($userRepository, $tokenRepository);
-        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository);
+        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository, $database);
 
         $container->set(PasswordHasher::class, $passwordHasher);
         $container->set(JwtHelper::class, $jwtHelper);

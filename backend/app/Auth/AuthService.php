@@ -2,13 +2,20 @@
 
 namespace App\Auth;
 
+use PDO;
+use Throwable;
+
 class AuthService implements AuthServiceInterface
 {
+    private const DEFAULT_ROLE_ID = 4;
+    private const DEFAULT_ROLE_SLUG = 'student';
+
     public function __construct(
         private PasswordHasher $passwordHasher,
         private JwtHelper $jwtHelper,
         private AuthValidator $validator,
-        private AuthRepositoryInterface $authRepository
+        private AuthRepositoryInterface $authRepository,
+        private ?PDO $database = null
     ) {
     }
 
@@ -24,10 +31,13 @@ class AuthService implements AuthServiceInterface
             throw new AuthException('Invalid credentials.');
         }
 
+        $role = $this->authRepository->findUserRole((int) $user->id());
+
         $token = $this->jwtHelper->issue([
-            'id' => $user->id(),
+            'id'    => $user->id(),
             'email' => $user->email(),
-            'type' => 'login',
+            'type'  => 'login',
+            'role'  => $role,
         ]);
         $this->authRepository->storeToken($user, $token);
 
@@ -46,19 +56,38 @@ class AuthService implements AuthServiceInterface
             throw new AuthException('Email is already registered.');
         }
 
-        $user = $this->authRepository->create([
-            'name' => $payload['name'] ?? null,
-            'email' => $credentials->email(),
-            'password_hash' => $this->passwordHasher->hash((string) $credentials->password()),
-        ]);
-        $token = $this->jwtHelper->issue([
-            'id' => $user->id(),
-            'email' => $user->email(),
-            'type' => 'register',
-        ]);
-        $this->authRepository->storeToken($user, $token);
+        if (!$this->database instanceof PDO) {
+            throw new AuthException('Database connection unavailable.');
+        }
 
-        return new AuthenticatedUser($user, $token);
+        $this->database->beginTransaction();
+
+        try {
+            $user = $this->authRepository->create([
+                'name'          => $payload['name'] ?? null,
+                'email'         => $credentials->email(),
+                'password_hash' => $this->passwordHasher->hash((string) $credentials->password()),
+            ]);
+
+            $this->authRepository->assignRole((int) $user->id(), self::DEFAULT_ROLE_ID);
+
+            $token = $this->jwtHelper->issue([
+                'id'    => $user->id(),
+                'email' => $user->email(),
+                'type'  => 'register',
+                'role'  => self::DEFAULT_ROLE_SLUG,
+            ]);
+
+            $this->authRepository->storeToken($user, $token);
+
+            $this->database->commit();
+
+            return new AuthenticatedUser($user, $token);
+        } catch (Throwable $e) {
+            $this->database->rollBack();
+
+            throw new AuthException('Registration failed.', 0, $e);
+        }
     }
 
     public function logout(?string $token = null): void
