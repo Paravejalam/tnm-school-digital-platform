@@ -10,6 +10,7 @@ use App\Attendance\AttendanceServiceProvider;
 use App\AttendanceRecord\AttendanceRecordServiceProvider;
 use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
+use App\Auth\RbacMiddleware;
 use App\Config\ConfigLoader;
 use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
@@ -197,8 +198,8 @@ class Kernel
      * Return the middleware stack for a given request.
      *
      * Protected route prefixes require AuthMiddleware.
+     * RbacMiddleware executes after AuthMiddleware for permission enforcement.
      * Future: rate limiting middleware hook here.
-     * Future: RBAC middleware hook here (after Auth).
      */
     private function middlewareFor(RequestHelper $request): array
     {
@@ -234,14 +235,20 @@ class Kernel
             return [];
         }
 
-        $middleware = $this->container->get(AuthMiddleware::class);
+        $stack = [];
+
+        $authMiddleware = $this->container->get(AuthMiddleware::class);
+        if ($authMiddleware instanceof AuthMiddleware) {
+            $stack[] = $authMiddleware;
+        }
 
         // Future hook: rate limiting middleware
-        // $rateLimiter = $this->container->get(RateLimitMiddleware::class);
 
-        // Future hook: RBAC middleware
-        // $rbac = $this->container->get(RbacMiddleware::class);
+        $rbacMiddleware = $this->container->get(RbacMiddleware::class);
+        if ($rbacMiddleware instanceof RbacMiddleware) {
+            $stack[] = $rbacMiddleware;
+        }
 
-        return $middleware instanceof AuthMiddleware ? [$middleware] : [];
+        return $stack;
     }
 }
