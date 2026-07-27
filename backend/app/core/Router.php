@@ -87,6 +87,10 @@ class Router
             return $this->authController()->logout($this->req($request));
         }
 
+        if ($m === 'POST' && $p === '/auth/refresh') {
+            return $this->authController()->refresh($this->req($request));
+        }
+
         // ------------------------------------------------------------------
         // Resource routes (protected — AuthMiddleware applied via Kernel)
         // ------------------------------------------------------------------

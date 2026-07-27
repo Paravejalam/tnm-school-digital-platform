@@ -17,8 +17,9 @@ class AuthServiceProvider
         $authValidator = new AuthValidator();
         $userRepository = new UserRepository($database);
         $tokenRepository = new TokenRepository($database);
+        $refreshTokenRepository = new RefreshTokenRepository($database);
         $authRepository = new AuthRepository($userRepository, $tokenRepository);
-        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository, $database);
+        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository, $database, $refreshTokenRepository);
 
         $container->set(PasswordHasher::class, $passwordHasher);
         $container->set(JwtHelper::class, $jwtHelper);
@@ -27,6 +28,8 @@ class AuthServiceProvider
         $container->set(UserRepositoryInterface::class, $userRepository);
         $container->set(TokenRepository::class, $tokenRepository);
         $container->set(TokenRepositoryInterface::class, $tokenRepository);
+        $container->set(RefreshTokenRepository::class, $refreshTokenRepository);
+        $container->set(RefreshTokenRepositoryInterface::class, $refreshTokenRepository);
         $container->set(AuthRepository::class, $authRepository);
         $container->set(AuthRepositoryInterface::class, $authRepository);
         $container->set(AuthService::class, $authService);
@@ -40,6 +43,7 @@ class AuthServiceProvider
         $container->set('auth.validator', $authValidator);
         $container->set('auth.userRepository', $userRepository);
         $container->set('auth.tokenRepository', $tokenRepository);
+        $container->set('auth.refreshTokenRepository', $refreshTokenRepository);
         $container->set('auth.repository', $authRepository);
         $container->set('auth.service', $authService);
         $container->set('auth.controller', $container->get(AuthController::class));
