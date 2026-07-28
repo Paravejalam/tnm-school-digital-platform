@@ -5,8 +5,11 @@ namespace App\Student;
 use App\AcademicSession\AcademicSessionRepositoryInterface;
 use App\AcademicClass\AcademicClassRepositoryInterface;
 use App\Section\SectionRepositoryInterface;
+use App\Audit\AuditLoggerInterface;
 use App\Auth\UserRepositoryInterface;
 use App\Auth\ValidationException;
+use PDO;
+use Throwable;
 
 class StudentService implements StudentServiceInterface
 {
@@ -16,7 +19,9 @@ class StudentService implements StudentServiceInterface
         private ?AcademicSessionRepositoryInterface $sessionRepository = null,
         private ?AcademicClassRepositoryInterface $classRepository = null,
         private ?SectionRepositoryInterface $sectionRepository = null,
-        private ?UserRepositoryInterface $userRepository = null
+        private ?UserRepositoryInterface $userRepository = null,
+        private ?PDO $database = null,
+        private ?AuditLoggerInterface $auditLogger = null
     ) {
     }
 
@@ -46,7 +51,28 @@ class StudentService implements StudentServiceInterface
             throw new StudentException('Admission number is already registered.');
         }
 
-        return $this->students->create($payload);
+        if ($this->database instanceof PDO) {
+            $this->database->beginTransaction();
+        }
+
+        try {
+            $result = $this->students->create($payload);
+
+            if ($this->auditLogger instanceof AuditLoggerInterface) {
+                $this->auditLogger->log('CREATE', 'student', $result->id(), null, $payload);
+            }
+
+            if ($this->database instanceof PDO) {
+                $this->database->commit();
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($this->database instanceof PDO && $this->database->inTransaction()) {
+                $this->database->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function update(UpdateStudentRequest $request): ?Student
@@ -62,12 +88,58 @@ class StudentService implements StudentServiceInterface
             }
         }
 
-        return $this->students->update($request->id(), $payload);
+        $old = $this->students->findById($request->id());
+
+        if ($this->database instanceof PDO) {
+            $this->database->beginTransaction();
+        }
+
+        try {
+            $result = $this->students->update($request->id(), $payload);
+
+            if ($result !== null && $this->auditLogger instanceof AuditLoggerInterface) {
+                $this->auditLogger->log('UPDATE', 'student', $request->id(), $this->auditLogger->entityToArray($old), $payload);
+            }
+
+            if ($this->database instanceof PDO) {
+                $this->database->commit();
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($this->database instanceof PDO && $this->database->inTransaction()) {
+                $this->database->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function delete(int $id): bool
     {
-        return $this->students->delete($id);
+        $old = $this->students->findById($id);
+
+        if ($this->database instanceof PDO) {
+            $this->database->beginTransaction();
+        }
+
+        try {
+            $result = $this->students->delete($id);
+
+            if ($result && $this->auditLogger instanceof AuditLoggerInterface) {
+                $this->auditLogger->log('DELETE', 'student', $id, $this->auditLogger->entityToArray($old));
+            }
+
+            if ($this->database instanceof PDO) {
+                $this->database->commit();
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($this->database instanceof PDO && $this->database->inTransaction()) {
+                $this->database->rollBack();
+            }
+            throw $e;
+        }
     }
 
     private function validateReferences(array $payload): void

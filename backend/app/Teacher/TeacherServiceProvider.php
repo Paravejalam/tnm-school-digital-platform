@@ -4,6 +4,7 @@ namespace App\Teacher;
 
 use App\Support\AppContainer;
 use App\Auth\UserRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class TeacherServiceProvider
@@ -16,7 +17,9 @@ class TeacherServiceProvider
         $validator = new TeacherValidator();
         $repository = new TeacherRepository($database);
         $userRepository = new UserRepository($database);
-        $service = new TeacherService($repository, $validator, $userRepository);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new TeacherService($repository, $validator, $userRepository, $database, $auditLogger);
         $controller = new TeacherController($service);
 
         $container->set(TeacherValidator::class, $validator);
