@@ -3,6 +3,7 @@
 namespace App\Period;
 
 use App\Support\AppContainer;
+use App\Timetable\TimetableRepository;
 use PDO;
 
 class PeriodServiceProvider
@@ -14,7 +15,8 @@ class PeriodServiceProvider
 
         $validator = new PeriodValidator();
         $repository = new PeriodRepository($database);
-        $service = new PeriodService($repository, $validator);
+        $timetableRepository = new TimetableRepository($database);
+        $service = new PeriodService($repository, $validator, $timetableRepository);
         $controller = new PeriodController($service);
 
         $container->set(PeriodValidator::class, $validator);

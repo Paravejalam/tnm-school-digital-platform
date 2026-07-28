@@ -3,6 +3,10 @@
 namespace App\Attendance;
 
 use App\Support\AppContainer;
+use App\AcademicSession\AcademicSessionRepository;
+use App\AcademicClass\AcademicClassRepository;
+use App\Section\SectionRepository;
+use App\Student\StudentRepository;
 use PDO;
 
 class AttendanceServiceProvider
@@ -14,7 +18,11 @@ class AttendanceServiceProvider
 
         $validator = new AttendanceValidator();
         $repository = new AttendanceRepository($database);
-        $service = new AttendanceService($repository, $validator);
+        $sessionRepository = new AcademicSessionRepository($database);
+        $classRepository = new AcademicClassRepository($database);
+        $sectionRepository = new SectionRepository($database);
+        $studentRepository = new StudentRepository($database);
+        $service = new AttendanceService($repository, $validator, $sessionRepository, $classRepository, $sectionRepository, $studentRepository);
         $controller = new AttendanceController($service);
 
         $container->set(AttendanceValidator::class, $validator);

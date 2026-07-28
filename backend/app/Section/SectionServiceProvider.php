@@ -3,6 +3,7 @@
 namespace App\Section;
 
 use App\Support\AppContainer;
+use App\AcademicClass\AcademicClassRepository;
 use PDO;
 
 class SectionServiceProvider
@@ -14,7 +15,8 @@ class SectionServiceProvider
 
         $validator = new SectionValidator();
         $repository = new SectionRepository($database);
-        $service = new SectionService($repository, $validator);
+        $classRepository = new AcademicClassRepository($database);
+        $service = new SectionService($repository, $validator, $classRepository);
         $controller = new SectionController($service);
 
         $container->set(SectionValidator::class, $validator);

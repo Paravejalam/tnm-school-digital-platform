@@ -2,11 +2,15 @@
 
 namespace App\Teacher;
 
+use App\Auth\UserRepositoryInterface;
+use App\Auth\ValidationException;
+
 class TeacherService implements TeacherServiceInterface
 {
     public function __construct(
         private TeacherRepositoryInterface $teachers,
-        private TeacherValidator $validator
+        private TeacherValidator $validator,
+        private ?UserRepositoryInterface $userRepository = null
     ) {
     }
 
@@ -29,6 +33,7 @@ class TeacherService implements TeacherServiceInterface
     {
         $payload = $request->payload();
         $this->validator->validateCreate($payload);
+        $this->validateReferences($payload);
 
         $existing = $this->teachers->findByEmployeeId((string) $payload['employee_id']);
         if ($existing instanceof Teacher) {
@@ -42,6 +47,7 @@ class TeacherService implements TeacherServiceInterface
     {
         $payload = $request->payload();
         $this->validator->validateUpdate($payload);
+        $this->validateReferences($payload);
 
         if (isset($payload['employee_id'])) {
             $existing = $this->teachers->findByEmployeeId((string) $payload['employee_id']);
@@ -56,5 +62,15 @@ class TeacherService implements TeacherServiceInterface
     public function delete(int $id): bool
     {
         return $this->teachers->delete($id);
+    }
+
+    private function validateReferences(array $payload): void
+    {
+        if (isset($payload['user_id']) && $this->userRepository instanceof UserRepositoryInterface) {
+            $user = $this->userRepository->findById((int) $payload['user_id']);
+            if ($user === null) {
+                throw new ValidationException(['user_id' => ['User not found.']]);
+            }
+        }
     }
 }
