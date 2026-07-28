@@ -3,6 +3,7 @@
 namespace App\HolidayCalendar;
 
 use App\Support\AppContainer;
+use App\AcademicSession\AcademicSessionRepository;
 use PDO;
 
 class HolidayCalendarServiceProvider
@@ -14,7 +15,8 @@ class HolidayCalendarServiceProvider
 
         $validator = new HolidayCalendarValidator();
         $repository = new HolidayCalendarRepository($database);
-        $service = new HolidayCalendarService($repository, $validator);
+        $sessionRepository = new AcademicSessionRepository($database);
+        $service = new HolidayCalendarService($repository, $validator, $sessionRepository);
         $controller = new HolidayCalendarController($service);
 
         $container->set(HolidayCalendarValidator::class, $validator);

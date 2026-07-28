@@ -3,6 +3,7 @@
 namespace App\AttendanceRecord;
 
 use App\Support\AppContainer;
+use App\Attendance\AttendanceRepository;
 use PDO;
 
 class AttendanceRecordServiceProvider
@@ -14,7 +15,8 @@ class AttendanceRecordServiceProvider
 
         $validator = new AttendanceRecordValidator();
         $repository = new AttendanceRecordRepository($database);
-        $service = new AttendanceRecordService($repository, $validator);
+        $attendanceRepository = new AttendanceRepository($database);
+        $service = new AttendanceRecordService($repository, $validator, $attendanceRepository);
         $controller = new AttendanceRecordController($service);
 
         $container->set(AttendanceRecordValidator::class, $validator);

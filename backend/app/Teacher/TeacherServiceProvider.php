@@ -3,6 +3,7 @@
 namespace App\Teacher;
 
 use App\Support\AppContainer;
+use App\Auth\UserRepository;
 use PDO;
 
 class TeacherServiceProvider
@@ -14,7 +15,8 @@ class TeacherServiceProvider
 
         $validator = new TeacherValidator();
         $repository = new TeacherRepository($database);
-        $service = new TeacherService($repository, $validator);
+        $userRepository = new UserRepository($database);
+        $service = new TeacherService($repository, $validator, $userRepository);
         $controller = new TeacherController($service);
 
         $container->set(TeacherValidator::class, $validator);

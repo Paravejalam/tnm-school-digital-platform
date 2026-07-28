@@ -2,11 +2,15 @@
 
 namespace App\Period;
 
+use App\Timetable\TimetableRepositoryInterface;
+use App\Auth\ValidationException;
+
 class PeriodService implements PeriodServiceInterface
 {
     public function __construct(
         private PeriodRepositoryInterface $repository,
-        private PeriodValidator $validator
+        private PeriodValidator $validator,
+        private ?TimetableRepositoryInterface $timetableRepository = null
     ) {
     }
 
@@ -24,6 +28,7 @@ class PeriodService implements PeriodServiceInterface
     {
         $payload = $request->payload();
         $this->validator->validateCreate($payload);
+        $this->validateReferences($payload);
 
         $existing = $this->repository->findByName((string) $payload['period_name']);
         if ($existing instanceof Period) {
@@ -37,6 +42,7 @@ class PeriodService implements PeriodServiceInterface
     {
         $payload = $request->payload();
         $this->validator->validateUpdate($payload);
+        $this->validateReferences($payload);
 
         if (isset($payload['period_name'])) {
             $existing = $this->repository->findByName((string) $payload['period_name']);
@@ -51,5 +57,15 @@ class PeriodService implements PeriodServiceInterface
     public function delete(int $id): bool
     {
         return $this->repository->delete($id);
+    }
+
+    private function validateReferences(array $payload): void
+    {
+        if (isset($payload['timetable_id']) && $this->timetableRepository instanceof TimetableRepositoryInterface) {
+            $timetable = $this->timetableRepository->findById((int) $payload['timetable_id']);
+            if ($timetable === null) {
+                throw new ValidationException(['timetable_id' => ['Timetable not found.']]);
+            }
+        }
     }
 }
