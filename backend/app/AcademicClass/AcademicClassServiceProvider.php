@@ -4,6 +4,7 @@ namespace App\AcademicClass;
 
 use App\Support\AppContainer;
 use App\AcademicSession\AcademicSessionRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class AcademicClassServiceProvider
@@ -16,7 +17,9 @@ class AcademicClassServiceProvider
         $validator = new AcademicClassValidator();
         $repository = new AcademicClassRepository($database);
         $sessionRepository = new AcademicSessionRepository($database);
-        $service = new AcademicClassService($repository, $validator, $sessionRepository);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new AcademicClassService($repository, $validator, $sessionRepository, $database, $auditLogger);
         $controller = new AcademicClassController($service);
 
         $container->set(AcademicClassValidator::class, $validator);

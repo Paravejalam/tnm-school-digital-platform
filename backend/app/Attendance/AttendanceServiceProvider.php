@@ -7,6 +7,7 @@ use App\AcademicSession\AcademicSessionRepository;
 use App\AcademicClass\AcademicClassRepository;
 use App\Section\SectionRepository;
 use App\Student\StudentRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class AttendanceServiceProvider
@@ -22,7 +23,9 @@ class AttendanceServiceProvider
         $classRepository = new AcademicClassRepository($database);
         $sectionRepository = new SectionRepository($database);
         $studentRepository = new StudentRepository($database);
-        $service = new AttendanceService($repository, $validator, $sessionRepository, $classRepository, $sectionRepository, $studentRepository);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new AttendanceService($repository, $validator, $sessionRepository, $classRepository, $sectionRepository, $studentRepository, $database, $auditLogger);
         $controller = new AttendanceController($service);
 
         $container->set(AttendanceValidator::class, $validator);

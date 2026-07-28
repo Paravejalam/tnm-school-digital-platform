@@ -8,6 +8,7 @@ use App\AcademicClass\AcademicClassServiceProvider;
 use App\AcademicSession\AcademicSessionServiceProvider;
 use App\Attendance\AttendanceServiceProvider;
 use App\AttendanceRecord\AttendanceRecordServiceProvider;
+use App\Audit\AuditLogServiceProvider;
 use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
 use App\Auth\RbacMiddleware;
@@ -106,6 +107,7 @@ class Kernel
 
         // 9. Domain module service providers
         (new AuthServiceProvider())->register($this->container);
+        (new AuditLogServiceProvider())->register($this->container);
         (new StudentServiceProvider())->register($this->container);
         (new TeacherServiceProvider())->register($this->container);
         (new AcademicSessionServiceProvider())->register($this->container);

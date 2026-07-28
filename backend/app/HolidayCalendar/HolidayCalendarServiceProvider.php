@@ -4,6 +4,7 @@ namespace App\HolidayCalendar;
 
 use App\Support\AppContainer;
 use App\AcademicSession\AcademicSessionRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class HolidayCalendarServiceProvider
@@ -16,7 +17,9 @@ class HolidayCalendarServiceProvider
         $validator = new HolidayCalendarValidator();
         $repository = new HolidayCalendarRepository($database);
         $sessionRepository = new AcademicSessionRepository($database);
-        $service = new HolidayCalendarService($repository, $validator, $sessionRepository);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new HolidayCalendarService($repository, $validator, $sessionRepository, $database, $auditLogger);
         $controller = new HolidayCalendarController($service);
 
         $container->set(HolidayCalendarValidator::class, $validator);
