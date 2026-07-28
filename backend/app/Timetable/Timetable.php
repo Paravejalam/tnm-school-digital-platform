@@ -12,7 +12,10 @@ class Timetable
         private ?int $sectionId = null,
         private ?int $subjectId = null,
         private ?int $teacherId = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -54,5 +57,20 @@ class Timetable
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }

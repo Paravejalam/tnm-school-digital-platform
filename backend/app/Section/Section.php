@@ -9,7 +9,11 @@ class Section
         private ?string $sectionName = null,
         private ?string $code = null,
         private ?int $classId = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?int $capacity = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -36,5 +40,25 @@ class Section
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function capacity(): ?int
+    {
+        return $this->capacity;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }
