@@ -31,7 +31,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status FROM attendance' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status, remarks, marked_by, created_at, updated_at FROM attendance' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status FROM attendance WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status, remarks, marked_by, created_at, updated_at FROM attendance WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status FROM attendance WHERE attendance_date = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, attendance_date, academic_session_id, class_id, section_id, student_id, status, remarks, marked_by, created_at, updated_at FROM attendance WHERE attendance_date = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -88,7 +88,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO attendance (attendance_date, academic_session_id, class_id, section_id, student_id, status) VALUES (:attendance_date, :academic_session_id, :class_id, :section_id, :student_id, :status)');
+            $statement = $this->database->prepare('INSERT INTO attendance (attendance_date, academic_session_id, class_id, section_id, student_id, status, remarks, marked_by) VALUES (:attendance_date, :academic_session_id, :class_id, :section_id, :student_id, :status, :remarks, :marked_by)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -106,7 +106,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof Attendance ? AttendanceResponse::fromEntity($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE attendance SET attendance_date = :attendance_date, academic_session_id = :academic_session_id, class_id = :class_id, section_id = :section_id, student_id = :student_id, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE attendance SET attendance_date = :attendance_date, academic_session_id = :academic_session_id, class_id = :class_id, section_id = :section_id, student_id = :student_id, status = :status, remarks = :remarks, marked_by = :marked_by WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -141,6 +141,8 @@ class AttendanceRepository implements AttendanceRepositoryInterface
             'section_id' => $attributes['section_id'] ?? null,
             'student_id' => $attributes['student_id'] ?? null,
             'status' => $attributes['status'] ?? 'active',
+            'remarks' => $attributes['remarks'] ?? null,
+            'marked_by' => $attributes['marked_by'] ?? null,
         ];
     }
 
@@ -153,7 +155,12 @@ class AttendanceRepository implements AttendanceRepositoryInterface
             isset($row['class_id']) ? (int) $row['class_id'] : null,
             isset($row['section_id']) ? (int) $row['section_id'] : null,
             isset($row['student_id']) ? (int) $row['student_id'] : null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            $row['remarks'] ?? null,
+            isset($row['marked_by']) ? (int) $row['marked_by'] : null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

@@ -31,7 +31,7 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, holiday_name, academic_session_id, status FROM holiday_calendars' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, academic_session_id, holiday_name, holiday_date, holiday_type, is_recurring, description, status, created_at, updated_at FROM holiday_calendars' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, holiday_name, academic_session_id, status FROM holiday_calendars WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, academic_session_id, holiday_name, holiday_date, holiday_type, is_recurring, description, status, created_at, updated_at FROM holiday_calendars WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, holiday_name, academic_session_id, status FROM holiday_calendars WHERE holiday_name = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, academic_session_id, holiday_name, holiday_date, holiday_type, is_recurring, description, status, created_at, updated_at FROM holiday_calendars WHERE holiday_name = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -88,7 +88,7 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO holiday_calendars (holiday_name, academic_session_id, status) VALUES (:holiday_name, :academic_session_id, :status)');
+            $statement = $this->database->prepare('INSERT INTO holiday_calendars (academic_session_id, holiday_name, holiday_date, holiday_type, is_recurring, description, status) VALUES (:academic_session_id, :holiday_name, :holiday_date, :holiday_type, :is_recurring, :description, :status)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -106,7 +106,7 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof HolidayCalendar ? HolidayCalendarResponse::fromEntity($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE holiday_calendars SET holiday_name = :holiday_name, academic_session_id = :academic_session_id, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE holiday_calendars SET academic_session_id = :academic_session_id, holiday_name = :holiday_name, holiday_date = :holiday_date, holiday_type = :holiday_type, is_recurring = :is_recurring, description = :description, status = :status WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -135,8 +135,12 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
-            'holiday_name' => $attributes['holiday_name'] ?? null,
             'academic_session_id' => $attributes['academic_session_id'] ?? null,
+            'holiday_name' => $attributes['holiday_name'] ?? null,
+            'holiday_date' => $attributes['holiday_date'] ?? null,
+            'holiday_type' => $attributes['holiday_type'] ?? null,
+            'is_recurring' => $attributes['is_recurring'] ?? null,
+            'description' => $attributes['description'] ?? null,
             'status' => $attributes['status'] ?? 'active',
         ];
     }
@@ -147,7 +151,14 @@ class HolidayCalendarRepository implements HolidayCalendarRepositoryInterface
             isset($row['id']) ? (int) $row['id'] : null,
             $row['holiday_name'] ?? null,
             isset($row['academic_session_id']) ? (int) $row['academic_session_id'] : null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            $row['holiday_date'] ?? null,
+            $row['holiday_type'] ?? null,
+            isset($row['is_recurring']) ? (int) $row['is_recurring'] : null,
+            $row['description'] ?? null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

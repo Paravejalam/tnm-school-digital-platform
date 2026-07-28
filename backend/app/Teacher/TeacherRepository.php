@@ -37,7 +37,7 @@ class TeacherRepository implements TeacherRepositoryInterface
             $total = (int) $count->fetchColumn();
 
             $statement = $this->database->prepare(
-                'SELECT id, employee_id, first_name, last_name, email, phone, department, designation, status FROM teachers' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset'
+                'SELECT id, user_id, employee_id, first_name, last_name, email, phone, department, designation, gender, date_joined, status, created_at, updated_at FROM teachers' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset'
             );
 
             foreach ($params as $key => $value) {
@@ -62,7 +62,7 @@ class TeacherRepository implements TeacherRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, employee_id, first_name, last_name, email, phone, department, designation, status FROM teachers WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, user_id, employee_id, first_name, last_name, email, phone, department, designation, gender, date_joined, status, created_at, updated_at FROM teachers WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -79,7 +79,7 @@ class TeacherRepository implements TeacherRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, employee_id, first_name, last_name, email, phone, department, designation, status FROM teachers WHERE employee_id = :employee_id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, user_id, employee_id, first_name, last_name, email, phone, department, designation, gender, date_joined, status, created_at, updated_at FROM teachers WHERE employee_id = :employee_id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['employee_id' => $employeeId]);
             $row = $statement->fetch();
 
@@ -96,7 +96,7 @@ class TeacherRepository implements TeacherRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO teachers (employee_id, first_name, last_name, email, phone, department, designation, status) VALUES (:employee_id, :first_name, :last_name, :email, :phone, :department, :designation, :status)');
+            $statement = $this->database->prepare('INSERT INTO teachers (user_id, employee_id, first_name, last_name, email, phone, department, designation, gender, date_joined, status) VALUES (:user_id, :employee_id, :first_name, :last_name, :email, :phone, :department, :designation, :gender, :date_joined, :status)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -114,7 +114,7 @@ class TeacherRepository implements TeacherRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof Teacher ? TeacherResponse::fromTeacher($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE teachers SET employee_id = :employee_id, first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, department = :department, designation = :designation, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE teachers SET user_id = :user_id, employee_id = :employee_id, first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, department = :department, designation = :designation, gender = :gender, date_joined = :date_joined, status = :status WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -143,6 +143,7 @@ class TeacherRepository implements TeacherRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
+            'user_id' => $attributes['user_id'] ?? null,
             'employee_id' => $attributes['employee_id'] ?? null,
             'first_name' => $attributes['first_name'] ?? null,
             'last_name' => $attributes['last_name'] ?? null,
@@ -150,6 +151,8 @@ class TeacherRepository implements TeacherRepositoryInterface
             'phone' => $attributes['phone'] ?? null,
             'department' => $attributes['department'] ?? null,
             'designation' => $attributes['designation'] ?? null,
+            'gender' => $attributes['gender'] ?? null,
+            'date_joined' => $attributes['date_joined'] ?? null,
             'status' => $attributes['status'] ?? 'active',
         ];
     }
@@ -165,7 +168,13 @@ class TeacherRepository implements TeacherRepositoryInterface
             $row['phone'] ?? null,
             $row['department'] ?? null,
             $row['designation'] ?? null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            isset($row['user_id']) ? (int) $row['user_id'] : null,
+            $row['gender'] ?? null,
+            $row['date_joined'] ?? null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

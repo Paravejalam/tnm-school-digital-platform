@@ -31,7 +31,7 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, session_name, status FROM academic_sessions' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, session_name, start_date, end_date, status, is_current, created_at, updated_at FROM academic_sessions' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, session_name, status FROM academic_sessions WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, session_name, start_date, end_date, status, is_current, created_at, updated_at FROM academic_sessions WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, session_name, status FROM academic_sessions WHERE session_name = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, session_name, start_date, end_date, status, is_current, created_at, updated_at FROM academic_sessions WHERE session_name = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -88,7 +88,7 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO academic_sessions (session_name, status) VALUES (:session_name, :status)');
+            $statement = $this->database->prepare('INSERT INTO academic_sessions (session_name, start_date, end_date, status, is_current) VALUES (:session_name, :start_date, :end_date, :status, :is_current)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -106,7 +106,7 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof AcademicSession ? AcademicSessionResponse::fromEntity($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE academic_sessions SET session_name = :session_name, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE academic_sessions SET session_name = :session_name, start_date = :start_date, end_date = :end_date, status = :status, is_current = :is_current WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -136,7 +136,10 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
     {
         return [
             'session_name' => $attributes['session_name'] ?? null,
+            'start_date' => $attributes['start_date'] ?? null,
+            'end_date' => $attributes['end_date'] ?? null,
             'status' => $attributes['status'] ?? 'active',
+            'is_current' => $attributes['is_current'] ?? null,
         ];
     }
 
@@ -145,7 +148,13 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
         return new AcademicSession(
             isset($row['id']) ? (int) $row['id'] : null,
             $row['session_name'] ?? null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            $row['start_date'] ?? null,
+            $row['end_date'] ?? null,
+            isset($row['is_current']) ? (int) $row['is_current'] : null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

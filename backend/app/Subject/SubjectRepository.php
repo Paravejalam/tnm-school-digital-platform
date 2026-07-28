@@ -22,7 +22,7 @@ class SubjectRepository implements SubjectRepositoryInterface
             $params = [];
 
             if ($search !== null) {
-                $filters[] = 'subject_name LIKE :search';
+                $filters[] = 'name LIKE :search';
                 $params['search'] = '%' . $search . '%';
             }
 
@@ -31,7 +31,7 @@ class SubjectRepository implements SubjectRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, subject_name, code, section_id, status FROM subjects' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, name, code, description, status, created_at, updated_at FROM subjects' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class SubjectRepository implements SubjectRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, subject_name, code, section_id, status FROM subjects WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, name, code, description, status, created_at, updated_at FROM subjects WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class SubjectRepository implements SubjectRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, subject_name, code, section_id, status FROM subjects WHERE subject_name = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, name, code, description, status, created_at, updated_at FROM subjects WHERE name = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -88,7 +88,7 @@ class SubjectRepository implements SubjectRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO subjects (subject_name, code, section_id, status) VALUES (:subject_name, :code, :section_id, :status)');
+            $statement = $this->database->prepare('INSERT INTO subjects (name, code, description, status) VALUES (:name, :code, :description, :status)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -106,7 +106,7 @@ class SubjectRepository implements SubjectRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof Subject ? SubjectResponse::fromEntity($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE subjects SET subject_name = :subject_name, code = :code, section_id = :section_id, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE subjects SET name = :name, code = :code, description = :description, status = :status WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -135,9 +135,9 @@ class SubjectRepository implements SubjectRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
-            'subject_name' => $attributes['subject_name'] ?? null,
+            'name' => $attributes['name'] ?? null,
             'code' => $attributes['code'] ?? null,
-            'section_id' => $attributes['section_id'] ?? null,
+            'description' => $attributes['description'] ?? null,
             'status' => $attributes['status'] ?? 'active',
         ];
     }
@@ -146,10 +146,14 @@ class SubjectRepository implements SubjectRepositoryInterface
     {
         return new Subject(
             isset($row['id']) ? (int) $row['id'] : null,
-            $row['subject_name'] ?? null,
+            $row['name'] ?? null,
             $row['code'] ?? null,
-            isset($row['section_id']) ? (int) $row['section_id'] : null,
-            $row['status'] ?? 'active'
+            null,
+            $row['status'] ?? 'active',
+            $row['description'] ?? null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }
