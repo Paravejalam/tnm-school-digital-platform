@@ -20,4 +20,11 @@ class RegisterRequest
             $this->payload['password'] ?? null
         );
     }
+
+    public function role(): string
+    {
+        $role = $this->payload['role'] ?? 'student';
+
+        return in_array($role, ['student', 'teacher'], true) ? $role : 'student';
+    }
 }

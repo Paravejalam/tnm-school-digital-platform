@@ -3,6 +3,8 @@
 namespace App\Auth;
 
 use App\Support\AppContainer;
+use App\Student\StudentRepository;
+use App\Teacher\TeacherRepository;
 use PDO;
 
 class AuthServiceProvider
@@ -19,7 +21,9 @@ class AuthServiceProvider
         $tokenRepository = new TokenRepository($database);
         $refreshTokenRepository = new RefreshTokenRepository($database);
         $authRepository = new AuthRepository($userRepository, $tokenRepository);
-        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository, $database, $refreshTokenRepository);
+        $studentRepository = new StudentRepository($database);
+        $teacherRepository = new TeacherRepository($database);
+        $authService = new AuthService($passwordHasher, $jwtHelper, $authValidator, $authRepository, $database, $refreshTokenRepository, $studentRepository, $teacherRepository);
 
         $container->set(PasswordHasher::class, $passwordHasher);
         $container->set(JwtHelper::class, $jwtHelper);
