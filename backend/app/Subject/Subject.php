@@ -9,7 +9,11 @@ class Subject
         private ?string $subjectName = null,
         private ?string $code = null,
         private ?int $sectionId = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?string $description = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -36,5 +40,25 @@ class Subject
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function description(): ?string
+    {
+        return $this->description;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }

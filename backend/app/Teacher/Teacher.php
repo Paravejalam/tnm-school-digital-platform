@@ -13,7 +13,13 @@ class Teacher
         private ?string $phone = null,
         private ?string $department = null,
         private ?string $designation = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?int $userId = null,
+        private ?string $gender = null,
+        private ?string $dateJoined = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -60,5 +66,35 @@ class Teacher
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function userId(): ?int
+    {
+        return $this->userId;
+    }
+
+    public function gender(): ?string
+    {
+        return $this->gender;
+    }
+
+    public function dateJoined(): ?string
+    {
+        return $this->dateJoined;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }
