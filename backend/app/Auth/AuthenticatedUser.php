@@ -6,7 +6,8 @@ class AuthenticatedUser
 {
     public function __construct(
         private ?User $user = null,
-        private ?string $token = null
+        private ?string $token = null,
+        private ?string $refreshToken = null
     ) {
     }
 
@@ -18,5 +19,10 @@ class AuthenticatedUser
     public function token(): ?string
     {
         return $this->token;
+    }
+
+    public function refreshToken(): ?string
+    {
+        return $this->refreshToken;
     }
 }

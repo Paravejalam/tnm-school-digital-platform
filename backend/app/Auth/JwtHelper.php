@@ -23,6 +23,7 @@ class JwtHelper
 {
     private string $secret;
     private int $accessTokenTtl;
+    private int $refreshTokenTtl;
 
     public function __construct()
     {
@@ -36,14 +37,30 @@ class JwtHelper
         $this->accessTokenTtl = ($ttl !== false && $ttl !== null && $ttl !== '')
             ? (int) $ttl
             : 900;
+
+        $refreshTtl = $_ENV['JWT_REFRESH_TOKEN_TTL'] ?? getenv('JWT_REFRESH_TOKEN_TTL');
+        $this->refreshTokenTtl = ($refreshTtl !== false && $refreshTtl !== null && $refreshTtl !== '')
+            ? (int) $refreshTtl
+            : 604800;
+    }
+
+    public function accessTokenTtl(): int
+    {
+        return $this->accessTokenTtl;
+    }
+
+    public function refreshTokenTtl(): int
+    {
+        return $this->refreshTokenTtl;
     }
 
     /**
      * Issue a signed HS256 JWT with iat and exp claims.
      *
      * @param array<string, mixed> $claims
+     * @param int|null $ttl Override TTL in seconds (null uses access token TTL)
      */
-    public function issue(array $claims): string
+    public function issue(array $claims, ?int $ttl = null): string
     {
         $now = time();
 
@@ -54,7 +71,7 @@ class JwtHelper
 
         $payload = $this->base64UrlEncode(array_merge($claims, [
             'iat' => $now,
-            'exp' => $now + $this->accessTokenTtl,
+            'exp' => $now + ($ttl ?? $this->accessTokenTtl),
         ]));
 
         $signature = $this->sign($header . '.' . $payload);
