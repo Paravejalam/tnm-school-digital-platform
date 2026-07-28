@@ -4,11 +4,14 @@ namespace App\Auth;
 
 use PDO;
 use Throwable;
+use App\Student\StudentRepositoryInterface;
+use App\Teacher\TeacherRepositoryInterface;
 
 class AuthService implements AuthServiceInterface
 {
     private const DEFAULT_ROLE_ID = 4;
     private const DEFAULT_ROLE_SLUG = 'student';
+    private const ALLOWED_ROLES = ['student' => 4, 'teacher' => 3];
 
     public function __construct(
         private PasswordHasher $passwordHasher,
@@ -16,7 +19,9 @@ class AuthService implements AuthServiceInterface
         private AuthValidator $validator,
         private AuthRepositoryInterface $authRepository,
         private ?PDO $database = null,
-        private ?RefreshTokenRepositoryInterface $refreshTokenRepository = null
+        private ?RefreshTokenRepositoryInterface $refreshTokenRepository = null,
+        private ?StudentRepositoryInterface $studentRepository = null,
+        private ?TeacherRepositoryInterface $teacherRepository = null
     ) {
     }
 
@@ -63,6 +68,10 @@ class AuthService implements AuthServiceInterface
             throw new AuthException('Database connection unavailable.');
         }
 
+        $role = $request->role();
+        $roleId = self::ALLOWED_ROLES[$role] ?? self::DEFAULT_ROLE_ID;
+        $roleSlug = $role;
+
         $this->database->beginTransaction();
 
         try {
@@ -72,18 +81,20 @@ class AuthService implements AuthServiceInterface
                 'password_hash' => $this->passwordHasher->hash((string) $credentials->password()),
             ]);
 
-            $this->authRepository->assignRole((int) $user->id(), self::DEFAULT_ROLE_ID);
+            $this->authRepository->assignRole((int) $user->id(), $roleId);
 
             $token = $this->jwtHelper->issue([
                 'id'    => $user->id(),
                 'email' => $user->email(),
                 'type'  => 'register',
-                'role'  => self::DEFAULT_ROLE_SLUG,
+                'role'  => $roleSlug,
             ]);
 
             $this->authRepository->storeToken($user, $token);
 
             $refreshToken = $this->issueRefreshToken($user);
+
+            $this->createDomainProfile($user, $roleSlug);
 
             $this->database->commit();
 
@@ -200,5 +211,40 @@ class AuthService implements AuthServiceInterface
         }
 
         return $refreshToken;
+    }
+
+    private function createDomainProfile(User $user, string $role): void
+    {
+        $nameParts = explode(' ', trim((string) $user->name()), 2);
+        $firstName = $nameParts[0] ?? '';
+        $lastName = $nameParts[1] ?? '';
+
+        if ($role === 'teacher' && $this->teacherRepository instanceof TeacherRepositoryInterface) {
+            $employeeId = 'EMP-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
+            $this->teacherRepository->create([
+                'user_id'     => $user->id(),
+                'employee_id' => $employeeId,
+                'first_name'  => $firstName,
+                'last_name'   => $lastName,
+                'email'       => $user->email(),
+                'status'      => 'active',
+            ]);
+
+            return;
+        }
+
+        if ($this->studentRepository instanceof StudentRepositoryInterface) {
+            $admissionNumber = 'STU-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
+            $this->studentRepository->create([
+                'user_id'          => $user->id(),
+                'admission_number' => $admissionNumber,
+                'first_name'       => $firstName,
+                'last_name'        => $lastName,
+                'email'            => $user->email(),
+                'status'           => 'active',
+            ]);
+        }
     }
 }

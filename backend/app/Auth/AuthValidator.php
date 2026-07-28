@@ -27,6 +27,16 @@ class AuthValidator
             $errors['confirm_password'][] = 'Confirm password must match password.';
         }
 
+        $name = (string) ($payload['name'] ?? '');
+        if ($name === '') {
+            $errors['name'][] = 'Name is required.';
+        }
+
+        $role = (string) ($payload['role'] ?? 'student');
+        if ($role !== '' && !in_array($role, ['student', 'teacher'], true)) {
+            $errors['role'][] = 'Role must be student or teacher.';
+        }
+
         if ($errors !== []) {
             throw new ValidationException(errors: $errors);
         }
