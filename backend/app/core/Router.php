@@ -8,6 +8,7 @@ use App\AcademicClass\AcademicClassController;
 use App\AcademicSession\AcademicSessionController;
 use App\Attendance\AttendanceController;
 use App\AttendanceRecord\AttendanceRecordController;
+use App\Audit\AuditLogController;
 use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
@@ -159,6 +160,7 @@ class Router
             '/periods'           => [PeriodController::class,           'period.controller'],
             '/holiday-calendars' => [HolidayCalendarController::class,  'holidaycalendar.controller'],
             '/settings'          => [SystemSettingController::class,    'systemsetting.controller'],
+            '/audit-logs'        => [AuditLogController::class,          'audit.controller'],
         ];
 
         foreach ($map as $basePath => [$className, $serviceKey]) {
