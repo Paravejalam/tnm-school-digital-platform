@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 declare(strict_types=1);
 
@@ -25,6 +25,7 @@ use App\Subject\SubjectServiceProvider;
 use App\Support\AppContainer;
 use App\Support\ErrorHandler;
 use App\Support\Logger;
+use App\SystemSetting\SystemSettingServiceProvider;
 use App\Teacher\TeacherServiceProvider;
 use App\Timetable\TimetableServiceProvider;
 use PDO;
@@ -119,6 +120,7 @@ class Kernel
         (new TimetableServiceProvider())->register($this->container);
         (new PeriodServiceProvider())->register($this->container);
         (new HolidayCalendarServiceProvider())->register($this->container);
+        (new SystemSettingServiceProvider())->register($this->container);
 
         // 10. Router
         $this->container->set('router', new Router($this->container));
@@ -220,6 +222,7 @@ class Kernel
             '/timetables',
             '/periods',
             '/holiday-calendars',
+            '/settings',
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';

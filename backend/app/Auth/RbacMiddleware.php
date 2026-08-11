@@ -24,6 +24,7 @@ class RbacMiddleware
         '/timetables'         => 'timetables',
         '/periods'            => 'periods',
         '/holiday-calendars'  => 'holiday-calendars',
+        '/settings'           => 'system-settings',
     ];
 
     private const METHOD_ACTION = [

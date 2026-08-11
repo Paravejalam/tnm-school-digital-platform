@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 declare(strict_types=1);
 
@@ -17,6 +17,7 @@ use App\Section\SectionController;
 use App\Student\StudentController;
 use App\Subject\SubjectController;
 use App\Support\AppContainer;
+use App\SystemSetting\SystemSettingController;
 use App\Teacher\TeacherController;
 use App\Timetable\TimetableController;
 
@@ -157,6 +158,7 @@ class Router
             '/timetables'        => [TimetableController::class,        'timetable.controller'],
             '/periods'           => [PeriodController::class,           'period.controller'],
             '/holiday-calendars' => [HolidayCalendarController::class,  'holidaycalendar.controller'],
+            '/settings'          => [SystemSettingController::class,    'systemsetting.controller'],
         ];
 
         foreach ($map as $basePath => [$className, $serviceKey]) {
