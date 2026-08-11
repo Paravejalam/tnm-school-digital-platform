@@ -20,12 +20,19 @@ class AuditLogServiceProvider
 
         $repository = new AuditLogRepository($database);
         $auditLogger = new AuditLogger($database, $repository, $jwtHelper, $request);
+        $service = new AuditLogService($repository);
+        $controller = new AuditLogController($service);
 
         $container->set(AuditLogRepository::class, $repository);
         $container->set(AuditLogRepositoryInterface::class, $repository);
         $container->set(AuditLoggerInterface::class, $auditLogger);
         $container->set(AuditLogger::class, $auditLogger);
+        $container->set(AuditLogService::class, $service);
+        $container->set(AuditLogServiceInterface::class, $service);
+        $container->set(AuditLogController::class, $controller);
         $container->set('audit.repository', $repository);
         $container->set('audit.logger', $auditLogger);
+        $container->set('audit.service', $service);
+        $container->set('audit.controller', $controller);
     }
 }

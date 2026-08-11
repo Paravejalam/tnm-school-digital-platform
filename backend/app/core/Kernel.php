@@ -223,6 +223,7 @@ class Kernel
             '/periods',
             '/holiday-calendars',
             '/settings',
+            '/audit-logs',
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';
