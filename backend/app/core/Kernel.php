@@ -19,6 +19,7 @@ use App\HolidayCalendar\HolidayCalendarServiceProvider;
 use App\Http\Pipeline;
 use App\Http\RequestHelper;
 use App\Period\PeriodServiceProvider;
+use App\Role\RoleServiceProvider;
 use App\Section\SectionServiceProvider;
 use App\Student\StudentServiceProvider;
 use App\Subject\SubjectServiceProvider;
@@ -123,6 +124,7 @@ class Kernel
         (new HolidayCalendarServiceProvider())->register($this->container);
         (new SystemSettingServiceProvider())->register($this->container);
         (new UserServiceProvider())->register($this->container);
+        (new RoleServiceProvider())->register($this->container);
 
         // 10. Router
         $this->container->set('router', new Router($this->container));
@@ -227,6 +229,7 @@ class Kernel
             '/settings',
             '/audit-logs',
             '/users',
+            '/roles',
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';
