@@ -21,6 +21,7 @@ use App\Support\AppContainer;
 use App\SystemSetting\SystemSettingController;
 use App\Teacher\TeacherController;
 use App\Timetable\TimetableController;
+use App\User\UserController;
 
 /**
  * Application Router
@@ -161,6 +162,7 @@ class Router
             '/holiday-calendars' => [HolidayCalendarController::class,  'holidaycalendar.controller'],
             '/settings'          => [SystemSettingController::class,    'systemsetting.controller'],
             '/audit-logs'        => [AuditLogController::class,          'audit.controller'],
+            '/users'             => [UserController::class,              'user.controller'],
         ];
 
         foreach ($map as $basePath => [$className, $serviceKey]) {
