@@ -27,6 +27,7 @@ class RbacMiddleware
         '/settings'           => 'system-settings',
         '/audit-logs'         => 'audit-logs',
         '/users'              => 'users',
+        '/roles'              => 'roles',
     ];
 
     private const METHOD_ACTION = [
