@@ -28,6 +28,7 @@ use App\Support\Logger;
 use App\SystemSetting\SystemSettingServiceProvider;
 use App\Teacher\TeacherServiceProvider;
 use App\Timetable\TimetableServiceProvider;
+use App\User\UserServiceProvider;
 use PDO;
 use Throwable;
 
@@ -121,6 +122,7 @@ class Kernel
         (new PeriodServiceProvider())->register($this->container);
         (new HolidayCalendarServiceProvider())->register($this->container);
         (new SystemSettingServiceProvider())->register($this->container);
+        (new UserServiceProvider())->register($this->container);
 
         // 10. Router
         $this->container->set('router', new Router($this->container));
@@ -224,6 +226,7 @@ class Kernel
             '/holiday-calendars',
             '/settings',
             '/audit-logs',
+            '/users',
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';

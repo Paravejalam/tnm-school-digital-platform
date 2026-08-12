@@ -26,6 +26,7 @@ class RbacMiddleware
         '/holiday-calendars'  => 'holiday-calendars',
         '/settings'           => 'system-settings',
         '/audit-logs'         => 'audit-logs',
+        '/users'              => 'users',
     ];
 
     private const METHOD_ACTION = [
