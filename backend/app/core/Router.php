@@ -14,6 +14,7 @@ use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
 use App\HolidayCalendar\HolidayCalendarController;
 use App\Period\PeriodController;
+use App\Permission\PermissionController;
 use App\Role\RoleController;
 use App\Section\SectionController;
 use App\Student\StudentController;
@@ -165,6 +166,7 @@ class Router
             '/audit-logs'        => [AuditLogController::class,          'audit.controller'],
             '/users'             => [UserController::class,              'user.controller'],
             '/roles'             => [RoleController::class,              'role.controller'],
+            '/permissions'       => [PermissionController::class,        'permission.controller'],
         ];
 
         foreach ($map as $basePath => [$className, $serviceKey]) {
