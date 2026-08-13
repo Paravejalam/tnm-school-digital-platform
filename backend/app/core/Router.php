@@ -171,6 +171,7 @@ class Router
             '/periods'           => [PeriodController::class,           'period.controller'],
             '/holiday-calendars' => [HolidayCalendarController::class,  'holidaycalendar.controller'],
             '/settings'          => [SystemSettingController::class,    'systemsetting.controller'],
+        '/system-settings' => [SystemSettingController::class, 'systemsetting.controller'],
             '/audit-logs'        => [AuditLogController::class,          'audit.controller'],
             '/users'             => [UserController::class,              'user.controller'],
             '/roles'             => [RoleController::class,              'role.controller'],
