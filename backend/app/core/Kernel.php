@@ -236,6 +236,8 @@ class Kernel
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';
+        $requiresAuth = $requiresAuth || ($method === 'GET' && $path === '/auth/profile');
+        $requiresAuth = $requiresAuth || ($method === 'PUT' && $path === '/auth/change-password');
 
         if (!$requiresAuth) {
             foreach ($protectedPrefixes as $prefix) {

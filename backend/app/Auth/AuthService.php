@@ -4,6 +4,7 @@ namespace App\Auth;
 
 use PDO;
 use Throwable;
+use App\Audit\AuditLoggerInterface;
 use App\Student\StudentRepositoryInterface;
 use App\Teacher\TeacherRepositoryInterface;
 
@@ -21,7 +22,8 @@ class AuthService implements AuthServiceInterface
         private ?PDO $database = null,
         private ?RefreshTokenRepositoryInterface $refreshTokenRepository = null,
         private ?StudentRepositoryInterface $studentRepository = null,
-        private ?TeacherRepositoryInterface $teacherRepository = null
+        private ?TeacherRepositoryInterface $teacherRepository = null,
+        private ?AuditLoggerInterface $auditLogger = null
     ) {
     }
 
@@ -195,6 +197,72 @@ class AuthService implements AuthServiceInterface
                 } catch (Throwable) {
                 }
             }
+        }
+    }
+
+    public function profile(?string $token = null): ?User
+    {
+        if ($token === null || $token === '') {
+            throw new AuthException('Authorization token is required.');
+        }
+
+        $payload = $this->decodeToken($token);
+        $userId = isset($payload['id']) ? (int) $payload['id'] : 0;
+
+        if ($userId <= 0) {
+            throw new AuthException('Authorization token is invalid.');
+        }
+
+        $user = $this->authRepository->findById($userId);
+
+        return $user instanceof User ? $user : null;
+    }
+
+    public function changePassword(ChangePasswordRequest $request, ?string $token = null): void
+    {
+        if ($token === null || $token === '') {
+            throw new AuthException('Authorization token is required.');
+        }
+
+        $payload = $request->payload();
+        $this->validator->validateChangePassword($payload);
+
+        $decoded = $this->decodeToken($token);
+        $userId = isset($decoded['id']) ? (int) $decoded['id'] : 0;
+
+        if ($userId <= 0) {
+            throw new AuthException('Authorization token is invalid.');
+        }
+
+        $user = $this->authRepository->findById($userId);
+        if (!$user instanceof User) {
+            throw new AuthException('User not found.');
+        }
+
+        if (!$this->passwordHasher->verify((string) $request->currentPassword(), (string) $user->passwordHash())) {
+            throw new AuthException('Current password is incorrect.');
+        }
+
+        $newPassword = (string) $request->newPassword();
+        if ($this->passwordHasher->verify($newPassword, (string) $user->passwordHash())) {
+            throw new AuthException('New password must differ from the current password.');
+        }
+
+        $this->authRepository->updatePassword($userId, $this->passwordHasher->hash($newPassword));
+
+        if ($this->auditLogger instanceof AuditLoggerInterface) {
+            $this->auditLogger->log('PASSWORD_CHANGE', 'user', $userId, null, [
+                'email' => $user->email(),
+            ]);
+        }
+    }
+
+    private function decodeToken(string $token): array
+    {
+        try {
+            return $this->jwtHelper->decode($token);
+        } catch (Throwable) {
+            throw new AuthException('Authorization token is invalid.');
         }
     }
 

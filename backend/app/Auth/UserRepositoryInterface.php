@@ -13,4 +13,6 @@ interface UserRepositoryInterface
     public function assignRole(int $userId, int $roleId): void;
 
     public function findUserRole(int $userId): ?string;
+
+    public function updatePassword(int $userId, string $passwordHash): void;
 }

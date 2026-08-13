@@ -102,6 +102,22 @@ class UserRepository implements UserRepositoryInterface
         }
     }
 
+    public function updatePassword(int $userId, string $passwordHash): void
+    {
+        if (!$this->database instanceof PDO) {
+            return;
+        }
+
+        try {
+            $statement = $this->database->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+            $statement->execute([
+                'password_hash' => $passwordHash,
+                'id' => $userId,
+            ]);
+        } catch (Throwable) {
+        }
+    }
+
     private function mapUser(array $row): User
     {
         return new User(

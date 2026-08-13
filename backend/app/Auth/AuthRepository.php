@@ -44,4 +44,9 @@ class AuthRepository implements AuthRepositoryInterface
     {
         return $this->users->findUserRole($userId);
     }
+
+    public function updatePassword(int $userId, string $passwordHash): void
+    {
+        $this->users->updatePassword($userId, $passwordHash);
+    }
 }

@@ -96,6 +96,14 @@ class Router
             return $this->authController()->refresh($this->req($request));
         }
 
+        if ($m === 'GET' && $p === '/auth/profile') {
+            return $this->authController()->profile($this->req($request));
+        }
+
+        if ($m === 'PUT' && $p === '/auth/change-password') {
+            return $this->authController()->changePassword($this->req($request));
+        }
+
         // ------------------------------------------------------------------
         // Resource routes (protected — AuthMiddleware applied via Kernel)
         // ------------------------------------------------------------------

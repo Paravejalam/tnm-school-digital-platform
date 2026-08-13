@@ -8,7 +8,7 @@ use PDO;
 use ReflectionClass;
 use Throwable;
 
-class AuditLogger
+class AuditLogger implements AuditLoggerInterface
 {
     private ?RequestHelper $request;
 

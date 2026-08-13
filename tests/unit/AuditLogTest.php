@@ -20,6 +20,8 @@ declare(strict_types=1);
 require __DIR__ . '/../../backend/config/bootstrap.php';
 
 use App\Audit\AuditLog;
+use App\Audit\AuditLogger;
+use App\Audit\AuditLoggerInterface;
 use App\Audit\AuditLogListRequest;
 use App\Audit\AuditLogRepository;
 use App\Audit\AuditLogRepositoryInterface;
@@ -43,6 +45,8 @@ final class AuditLogTest
         self::testRepositoryNoDatabaseDegradesGracefully();
         self::testRepositorySqliteCreateAndPaginate();
         self::testRepositorySqliteFindById();
+        self::testLoggerImplementsInterface();
+        self::testLoggerWritesThroughRepository();
 
         echo PHP_EOL;
         echo sprintf("Assertions: %d, Failures: %d%s", self::$assertions, self::$failures, PHP_EOL);
@@ -221,6 +225,29 @@ final class AuditLogTest
         }
 
         self::assertSame(null, $repository->findById(999), 'missing id returns null');
+    }
+
+    private static function testLoggerImplementsInterface(): void
+    {
+        $logger = new AuditLogger();
+
+        self::assertTrue($logger instanceof AuditLoggerInterface, 'AuditLogger implements AuditLoggerInterface');
+    }
+
+    private static function testLoggerWritesThroughRepository(): void
+    {
+        $pdo = self::sqlite();
+        $repository = new AuditLogRepository($pdo);
+        $logger = new AuditLogger($pdo, $repository);
+
+        $logger->log('PASSWORD_CHANGE', 'user', 7, null, ['email' => 'a@b.c']);
+
+        $found = $repository->findById(1);
+        self::assertTrue($found instanceof AuditLog, 'logger writes row via repository');
+        if ($found instanceof AuditLog) {
+            self::assertSame('PASSWORD_CHANGE', $found->action(), 'logged action');
+            self::assertSame(7, $found->entityId(), 'logged entity_id');
+        }
     }
 
     private static function sqlite(): PDO
