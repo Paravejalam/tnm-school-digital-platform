@@ -28,9 +28,17 @@ class JwtHelper
     public function __construct()
     {
         $secret = $_ENV['JWT_SECRET'] ?? getenv('JWT_SECRET');
+        $environment = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'local';
+        $isSecureEnvironment = !in_array(strtolower((string) $environment), ['local', 'development', 'dev', 'test'], true);
+
         if ($secret === false || $secret === '' || $secret === null) {
+            if ($isSecureEnvironment) {
+                throw new \RuntimeException('JWT_SECRET must be configured for production use.');
+            }
+
             $secret = 'tnm-school-platform-default-secret-change-in-production';
         }
+
         $this->secret = (string) $secret;
 
         $ttl = $_ENV['JWT_ACCESS_TOKEN_TTL'] ?? getenv('JWT_ACCESS_TOKEN_TTL');

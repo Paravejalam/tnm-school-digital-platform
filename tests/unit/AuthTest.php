@@ -41,20 +41,28 @@ final class AuthTest
 
     public static function run(): void
     {
-        self::testChangePasswordRequestParsesPayload();
-        self::testValidatorAcceptsValidChangePassword();
-        self::testValidatorRejectsMissingCurrentPassword();
-        self::testValidatorRejectsShortNewPassword();
-        self::testValidatorRejectsMismatchedConfirm();
-        self::testServiceProfileReturnsUser();
-        self::testServiceProfileRejectsMissingToken();
-        self::testServiceProfileRejectsInvalidToken();
-        self::testServiceChangePasswordUpdatesHash();
-        self::testServiceChangePasswordRejectsWrongCurrent();
-        self::testServiceChangePasswordRejectsSamePassword();
-        self::testServiceChangePasswordRequiresToken();
-        self::testRepositoryUpdatePasswordDelegates();
-        self::testRepositoryNoDatabaseDegradesGracefully();
+        self::withEnv('APP_ENV', 'local', function (): void {
+            self::testChangePasswordRequestParsesPayload();
+            self::testValidatorAcceptsValidChangePassword();
+            self::testValidatorRejectsMissingCurrentPassword();
+            self::testValidatorRejectsShortNewPassword();
+            self::testValidatorRejectsMismatchedConfirm();
+            self::testServiceProfileReturnsUser();
+            self::testServiceProfileRejectsMissingToken();
+            self::testServiceProfileRejectsInvalidToken();
+            self::testServiceChangePasswordUpdatesHash();
+            self::testServiceChangePasswordRejectsWrongCurrent();
+            self::testServiceChangePasswordRejectsSamePassword();
+            self::testServiceChangePasswordRequiresToken();
+            self::testRepositoryUpdatePasswordDelegates();
+            self::testRepositoryNoDatabaseDegradesGracefully();
+            self::testJwtHelperAcceptsLocalDefaultSecret();
+            self::testJwtHelperRejectsMalformedToken();
+            self::testJwtHelperRejectsInvalidSignature();
+            self::testJwtHelperRejectsExpiredToken();
+        });
+
+        self::testJwtHelperRejectsMissingSecretInProduction();
 
         echo PHP_EOL;
         echo sprintf("Assertions: %d, Failures: %d%s", self::$assertions, self::$failures, PHP_EOL);
@@ -272,6 +280,96 @@ final class AuthTest
         $repository->updatePassword(1, 'new-hash');
 
         self::pass('updatePassword no-db no-op');
+    }
+
+    private static function testJwtHelperAcceptsLocalDefaultSecret(): void
+    {
+        self::withEnv('APP_ENV', 'local', function (): void {
+            self::withEnv('JWT_SECRET', null, function (): void {
+                $jwt = new JwtHelper();
+                $token = $jwt->issue(['id' => 42, 'type' => 'access']);
+                $payload = $jwt->decode($token);
+
+                self::assertSame(42, (int) $payload['id'], 'valid access token accepted');
+            });
+        });
+    }
+
+    private static function testJwtHelperRejectsMissingSecretInProduction(): void
+    {
+        self::withEnv('APP_ENV', 'production', function (): void {
+            self::withEnv('JWT_SECRET', null, function (): void {
+                try {
+                    new JwtHelper();
+                    self::fail('expected RuntimeException for missing JWT secret in production');
+                } catch (RuntimeException $exception) {
+                    self::assertTrue(str_contains($exception->getMessage(), 'JWT_SECRET'), 'production requires configured JWT secret');
+                }
+            });
+        });
+    }
+
+    private static function testJwtHelperRejectsMalformedToken(): void
+    {
+        $jwt = new JwtHelper();
+
+        try {
+            $jwt->decode('not-a-token');
+            self::fail('expected AuthException for malformed token');
+        } catch (AuthException $exception) {
+            self::pass('malformed token rejected');
+        }
+    }
+
+    private static function testJwtHelperRejectsInvalidSignature(): void
+    {
+        $jwt = new JwtHelper();
+        $token = $jwt->issue(['id' => 1, 'type' => 'access']);
+        $tampered = substr($token, 0, -1) . 'A';
+
+        try {
+            $jwt->decode($tampered);
+            self::fail('expected AuthException for invalid signature');
+        } catch (AuthException $exception) {
+            self::pass('invalid signature rejected');
+        }
+    }
+
+    private static function testJwtHelperRejectsExpiredToken(): void
+    {
+        $jwt = new JwtHelper();
+        $expired = $jwt->issue(['id' => 1, 'type' => 'access'], -1);
+
+        try {
+            $jwt->decode($expired);
+            self::fail('expected AuthException for expired token');
+        } catch (AuthException $exception) {
+            self::pass('expired token rejected');
+        }
+    }
+
+    private static function withEnv(string $key, mixed $value, callable $callback): mixed
+    {
+        $previous = $_ENV[$key] ?? getenv($key);
+        if ($value === null) {
+            unset($_ENV[$key]);
+            putenv($key);
+        } else {
+            $_ENV[$key] = (string) $value;
+            putenv($key . '=' . (string) $value);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            if ($previous === false || $previous === null) {
+                unset($_ENV[$key]);
+                putenv($key);
+            } else {
+                $_ENV[$key] = (string) $previous;
+                putenv($key . '=' . (string) $previous);
+            }
+        }
     }
 
     private static function service(FakeAuthRepository $repository): AuthService
