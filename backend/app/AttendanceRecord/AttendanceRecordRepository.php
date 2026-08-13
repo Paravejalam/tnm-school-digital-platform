@@ -105,7 +105,12 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
         }
 
         try {
-            $merged = array_merge($current instanceof AttendanceRecord ? AttendanceRecordResponse::fromEntity($current) : [], $attributes);
+            $merged = array_merge($current instanceof AttendanceRecord ? [
+                'attendance_id' => $current->attendanceId(),
+                'status' => $current->status(),
+                'note' => $current->note(),
+                'recorded_by' => $current->recordedBy(),
+            ] : [], $attributes);
             $statement = $this->database->prepare('UPDATE attendance_records SET attendance_id = :attendance_id, status = :status, note = :note, recorded_by = :recorded_by WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
@@ -136,7 +141,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
     {
         return [
             'attendance_id' => $attributes['attendance_id'] ?? null,
-            'status' => $attributes['status'] ?? 'active',
+            'status' => $attributes['status'] ?? 'present',
             'note' => $attributes['note'] ?? null,
             'recorded_by' => $attributes['recorded_by'] ?? null,
         ];
@@ -149,7 +154,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
             null,
             isset($row['attendance_id']) ? (int) $row['attendance_id'] : null,
             null,
-            $row['status'] ?? 'active',
+            $row['status'] ?? 'present',
             $row['note'] ?? null,
             isset($row['recorded_by']) ? (int) $row['recorded_by'] : null,
             $row['recorded_at'] ?? null,

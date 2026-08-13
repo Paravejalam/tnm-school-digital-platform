@@ -136,7 +136,7 @@ class AttendanceRecordService implements AttendanceRecordServiceInterface
         if (isset($payload['attendance_id']) && $this->attendanceRepository instanceof AttendanceRepositoryInterface) {
             $attendance = $this->attendanceRepository->findById((int) $payload['attendance_id']);
             if ($attendance === null) {
-                throw new ValidationException(['attendance_id' => ['Attendance not found.']]);
+                throw new ValidationException(errors: ['attendance_id' => ['Attendance not found.']]);
             }
         }
     }

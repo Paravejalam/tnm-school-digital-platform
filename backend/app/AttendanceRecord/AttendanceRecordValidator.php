@@ -6,7 +6,7 @@ use App\Auth\ValidationException;
 
 class AttendanceRecordValidator
 {
-    private const STATUSES = ['active', 'inactive'];
+    private const STATUSES = ['present', 'absent', 'late', 'excused', 'holiday'];
 
     public function validateCreate(array $payload): void
     {
@@ -26,7 +26,7 @@ class AttendanceRecordValidator
         }
 
         if (array_key_exists('status', $payload) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be present, absent, late, excused or holiday.';
         }
 
         if ($errors !== []) {
@@ -45,7 +45,7 @@ class AttendanceRecordValidator
         }
 
         if (isset($payload['status']) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be present, absent, late, excused or holiday.';
         }
 
         return $errors;
