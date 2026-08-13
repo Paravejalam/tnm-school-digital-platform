@@ -466,7 +466,7 @@ final class SectionModuleTest
             self::assertSame(2, $result->classId(), 'created class_id');
             self::assertSame('active', $result->status(), 'created status');
         }
-        self::assertSame('C', $repository->rows[3]['section_name'], 'create stored in repository');
+        self::assertSame('C', $repository->rows[3]['name'], 'create stored in repository');
         self::assertSame('CREATE', $logger->lastAction, 'create audit logged');
     }
 
