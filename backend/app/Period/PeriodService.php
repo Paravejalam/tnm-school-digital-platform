@@ -136,7 +136,7 @@ class PeriodService implements PeriodServiceInterface
         if (isset($payload['timetable_id']) && $this->timetableRepository instanceof TimetableRepositoryInterface) {
             $timetable = $this->timetableRepository->findById((int) $payload['timetable_id']);
             if ($timetable === null) {
-                throw new ValidationException(['timetable_id' => ['Timetable not found.']]);
+                throw new ValidationException(errors: ['timetable_id' => ['Timetable not found.']]);
             }
         }
     }
