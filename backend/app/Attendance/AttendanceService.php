@@ -142,28 +142,28 @@ class AttendanceService implements AttendanceServiceInterface
         if (isset($payload['academic_session_id']) && $this->sessionRepository instanceof AcademicSessionRepositoryInterface) {
             $session = $this->sessionRepository->findById((int) $payload['academic_session_id']);
             if ($session === null) {
-                throw new ValidationException(['academic_session_id' => ['Academic session not found.']]);
+                throw new ValidationException(errors: ['academic_session_id' => ['Academic session not found.']]);
             }
         }
 
         if (isset($payload['class_id']) && $this->classRepository instanceof AcademicClassRepositoryInterface) {
             $class = $this->classRepository->findById((int) $payload['class_id']);
             if ($class === null) {
-                throw new ValidationException(['class_id' => ['Academic class not found.']]);
+                throw new ValidationException(errors: ['class_id' => ['Academic class not found.']]);
             }
         }
 
         if (isset($payload['section_id']) && $this->sectionRepository instanceof SectionRepositoryInterface) {
             $section = $this->sectionRepository->findById((int) $payload['section_id']);
             if ($section === null) {
-                throw new ValidationException(['section_id' => ['Section not found.']]);
+                throw new ValidationException(errors: ['section_id' => ['Section not found.']]);
             }
         }
 
         if (isset($payload['student_id']) && $this->studentRepository instanceof StudentRepositoryInterface) {
             $student = $this->studentRepository->findById((int) $payload['student_id']);
             if ($student === null) {
-                throw new ValidationException(['student_id' => ['Student not found.']]);
+                throw new ValidationException(errors: ['student_id' => ['Student not found.']]);
             }
         }
     }

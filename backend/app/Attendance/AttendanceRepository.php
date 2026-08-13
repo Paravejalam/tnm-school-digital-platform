@@ -105,7 +105,16 @@ class AttendanceRepository implements AttendanceRepositoryInterface
         }
 
         try {
-            $merged = array_merge($current instanceof Attendance ? AttendanceResponse::fromEntity($current) : [], $attributes);
+            $merged = array_merge($current instanceof Attendance ? [
+                'attendance_date' => $current->attendanceDate(),
+                'academic_session_id' => $current->academicSessionId(),
+                'class_id' => $current->classId(),
+                'section_id' => $current->sectionId(),
+                'student_id' => $current->studentId(),
+                'status' => $current->status(),
+                'remarks' => $current->remarks(),
+                'marked_by' => $current->markedBy(),
+            ] : [], $attributes);
             $statement = $this->database->prepare('UPDATE attendance SET attendance_date = :attendance_date, academic_session_id = :academic_session_id, class_id = :class_id, section_id = :section_id, student_id = :student_id, status = :status, remarks = :remarks, marked_by = :marked_by WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
@@ -140,7 +149,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
             'class_id' => $attributes['class_id'] ?? null,
             'section_id' => $attributes['section_id'] ?? null,
             'student_id' => $attributes['student_id'] ?? null,
-            'status' => $attributes['status'] ?? 'active',
+            'status' => $attributes['status'] ?? 'present',
             'remarks' => $attributes['remarks'] ?? null,
             'marked_by' => $attributes['marked_by'] ?? null,
         ];
@@ -155,7 +164,7 @@ class AttendanceRepository implements AttendanceRepositoryInterface
             isset($row['class_id']) ? (int) $row['class_id'] : null,
             isset($row['section_id']) ? (int) $row['section_id'] : null,
             isset($row['student_id']) ? (int) $row['student_id'] : null,
-            $row['status'] ?? 'active',
+            $row['status'] ?? 'present',
             $row['remarks'] ?? null,
             isset($row['marked_by']) ? (int) $row['marked_by'] : null,
             $row['created_at'] ?? null,
