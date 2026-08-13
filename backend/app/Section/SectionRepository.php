@@ -83,13 +83,14 @@ class SectionRepository implements SectionRepositoryInterface
 
     public function create(array $attributes): Section
     {
+        $attributes = $this->attributes($attributes);
         if (!$this->database instanceof PDO) {
             return $this->mapEntity($attributes);
         }
 
         try {
             $statement = $this->database->prepare('INSERT INTO sections (name, capacity, class_id, status) VALUES (:name, :capacity, :class_id, :status)');
-            $statement->execute($this->attributes($attributes));
+            $statement->execute($attributes);
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
         }
@@ -105,9 +106,14 @@ class SectionRepository implements SectionRepositoryInterface
         }
 
         try {
-            $merged = array_merge($current instanceof Section ? SectionResponse::fromEntity($current) : [], $attributes);
+            $merged = array_merge($current instanceof Section ? [
+                'name' => $current->sectionName(),
+                'capacity' => $current->capacity(),
+                'class_id' => $current->classId(),
+                'status' => $current->status(),
+            ] : [], $this->attributes($attributes));
             $statement = $this->database->prepare('UPDATE sections SET name = :name, capacity = :capacity, class_id = :class_id, status = :status WHERE id = :id AND deleted_at IS NULL');
-            $params = $this->attributes($merged);
+            $params = $merged;
             $params['id'] = $id;
             $statement->execute($params);
         } catch (Throwable) {
@@ -135,7 +141,7 @@ class SectionRepository implements SectionRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
-            'name' => $attributes['name'] ?? null,
+            'name' => $attributes['section_name'] ?? $attributes['name'] ?? null,
             'capacity' => $attributes['capacity'] ?? null,
             'class_id' => $attributes['class_id'] ?? null,
             'status' => $attributes['status'] ?? 'active',
