@@ -144,35 +144,35 @@ class TimetableService implements TimetableServiceInterface
         if (isset($payload['academic_session_id']) && $this->sessionRepository instanceof AcademicSessionRepositoryInterface) {
             $session = $this->sessionRepository->findById((int) $payload['academic_session_id']);
             if ($session === null) {
-                throw new ValidationException(['academic_session_id' => ['Academic session not found.']]);
+                throw new ValidationException(errors: ['academic_session_id' => ['Academic session not found.']]);
             }
         }
 
         if (isset($payload['class_id']) && $this->classRepository instanceof AcademicClassRepositoryInterface) {
             $class = $this->classRepository->findById((int) $payload['class_id']);
             if ($class === null) {
-                throw new ValidationException(['class_id' => ['Academic class not found.']]);
+                throw new ValidationException(errors: ['class_id' => ['Academic class not found.']]);
             }
         }
 
         if (isset($payload['section_id']) && $this->sectionRepository instanceof SectionRepositoryInterface) {
             $section = $this->sectionRepository->findById((int) $payload['section_id']);
             if ($section === null) {
-                throw new ValidationException(['section_id' => ['Section not found.']]);
+                throw new ValidationException(errors: ['section_id' => ['Section not found.']]);
             }
         }
 
         if (isset($payload['subject_id']) && $this->subjectRepository instanceof SubjectRepositoryInterface) {
             $subject = $this->subjectRepository->findById((int) $payload['subject_id']);
             if ($subject === null) {
-                throw new ValidationException(['subject_id' => ['Subject not found.']]);
+                throw new ValidationException(errors: ['subject_id' => ['Subject not found.']]);
             }
         }
 
         if (isset($payload['teacher_id']) && $this->teacherRepository instanceof TeacherRepositoryInterface) {
             $teacher = $this->teacherRepository->findById((int) $payload['teacher_id']);
             if ($teacher === null) {
-                throw new ValidationException(['teacher_id' => ['Teacher not found.']]);
+                throw new ValidationException(errors: ['teacher_id' => ['Teacher not found.']]);
             }
         }
     }
