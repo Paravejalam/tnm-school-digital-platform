@@ -83,13 +83,14 @@ class SubjectRepository implements SubjectRepositoryInterface
 
     public function create(array $attributes): Subject
     {
+        $attributes = $this->attributes($attributes);
         if (!$this->database instanceof PDO) {
             return $this->mapEntity($attributes);
         }
 
         try {
             $statement = $this->database->prepare('INSERT INTO subjects (name, code, description, status) VALUES (:name, :code, :description, :status)');
-            $statement->execute($this->attributes($attributes));
+            $statement->execute($attributes);
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
         }
@@ -105,7 +106,12 @@ class SubjectRepository implements SubjectRepositoryInterface
         }
 
         try {
-            $merged = array_merge($current instanceof Subject ? SubjectResponse::fromEntity($current) : [], $attributes);
+            $merged = array_merge($current instanceof Subject ? [
+                'name' => $current->subjectName(),
+                'code' => $current->code(),
+                'description' => $current->description(),
+                'status' => $current->status(),
+            ] : [], $attributes);
             $statement = $this->database->prepare('UPDATE subjects SET name = :name, code = :code, description = :description, status = :status WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
@@ -135,7 +141,7 @@ class SubjectRepository implements SubjectRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
-            'name' => $attributes['name'] ?? null,
+            'name' => $attributes['subject_name'] ?? $attributes['name'] ?? null,
             'code' => $attributes['code'] ?? null,
             'description' => $attributes['description'] ?? null,
             'status' => $attributes['status'] ?? 'active',
