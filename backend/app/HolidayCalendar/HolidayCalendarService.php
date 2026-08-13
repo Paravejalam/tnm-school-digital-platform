@@ -136,7 +136,11 @@ class HolidayCalendarService implements HolidayCalendarServiceInterface
         if (isset($payload['academic_session_id']) && $this->sessionRepository instanceof AcademicSessionRepositoryInterface) {
             $session = $this->sessionRepository->findById((int) $payload['academic_session_id']);
             if ($session === null) {
-                throw new ValidationException(['academic_session_id' => ['Academic session not found.']]);
+                throw new ValidationException(
+                    errors: [
+                        'academic_session_id' => ['Academic session not found.'],
+                    ]
+                );
             }
         }
     }
