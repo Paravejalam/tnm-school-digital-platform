@@ -6,7 +6,7 @@ use App\Auth\ValidationException;
 
 class AcademicSessionValidator
 {
-    private const STATUSES = ['active', 'inactive'];
+    private const STATUSES = ['active', 'inactive', 'archived'];
 
     public function validateCreate(array $payload): void
     {
@@ -25,8 +25,16 @@ class AcademicSessionValidator
             $errors['session_name'][] = 'Academic session name cannot be empty.';
         }
 
+        if (array_key_exists('start_date', $payload) && trim((string) $payload['start_date']) === '') {
+            $errors['start_date'][] = 'Start date is required.';
+        }
+
+        if (array_key_exists('end_date', $payload) && trim((string) $payload['end_date']) === '') {
+            $errors['end_date'][] = 'End date is required.';
+        }
+
         if (array_key_exists('status', $payload) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be active, inactive, or archived.';
         }
 
         if ($errors !== []) {
@@ -38,14 +46,14 @@ class AcademicSessionValidator
     {
         $errors = [];
 
-        foreach (['session_name'] as $field) {
+        foreach (['session_name', 'start_date', 'end_date'] as $field) {
             if (trim((string) ($payload[$field] ?? '')) === '') {
                 $errors[$field][] = str_replace('_', ' ', ucfirst($field)) . ' is required.';
             }
         }
 
         if (isset($payload['status']) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be active, inactive, or archived.';
         }
 
         return $errors;

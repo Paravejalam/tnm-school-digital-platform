@@ -104,8 +104,19 @@ class AcademicSessionRepository implements AcademicSessionRepositoryInterface
             return $current;
         }
 
+        if (!$current instanceof AcademicSession) {
+            return null;
+        }
+
         try {
-            $merged = array_merge($current instanceof AcademicSession ? AcademicSessionResponse::fromEntity($current) : [], $attributes);
+            $merged = [
+                'session_name' => $current->sessionName(),
+                'start_date' => $current->startDate(),
+                'end_date' => $current->endDate(),
+                'status' => $current->status() ?? 'active',
+                'is_current' => $current->isCurrent() ?? 0,
+            ];
+            $merged = array_merge($merged, $attributes);
             $statement = $this->database->prepare('UPDATE academic_sessions SET session_name = :session_name, start_date = :start_date, end_date = :end_date, status = :status, is_current = :is_current WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
