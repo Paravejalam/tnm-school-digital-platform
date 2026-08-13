@@ -136,7 +136,7 @@ class SectionService implements SectionServiceInterface
         if (isset($payload['class_id']) && $this->classRepository instanceof AcademicClassRepositoryInterface) {
             $class = $this->classRepository->findById((int) $payload['class_id']);
             if ($class === null) {
-                throw new ValidationException(['class_id' => ['Academic class not found.']]);
+                throw new ValidationException(errors: ['class_id' => ['Academic class not found.']]);
             }
         }
     }

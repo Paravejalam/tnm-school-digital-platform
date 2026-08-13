@@ -111,9 +111,9 @@ class SectionRepository implements SectionRepositoryInterface
                 'capacity' => $current->capacity(),
                 'class_id' => $current->classId(),
                 'status' => $current->status(),
-            ] : [], $this->attributes($attributes));
+            ] : [], $attributes);
             $statement = $this->database->prepare('UPDATE sections SET name = :name, capacity = :capacity, class_id = :class_id, status = :status WHERE id = :id AND deleted_at IS NULL');
-            $params = $merged;
+            $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
         } catch (Throwable) {
