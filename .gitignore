@@ -1,3 +1,8 @@
 node_modules/
 .env
 vendor/
+
+# Next.js / frontend generated files
+apps/erp/.next/
+apps/erp/*.log
+apps/erp/*.tsbuildinfo
