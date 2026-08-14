@@ -1,19 +1,18 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { siteConfig } from '../lib/config/site';
-
-const inter = Inter({ subsets: ['latin'] });
+import { AuthProvider } from '../hooks/useAuth';
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} ERP`,
-  description: 'ERP shell for future module development.',
+  title: 'T.N. Memorial ERP',
+  description: 'ERP application',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className="font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
