@@ -68,6 +68,77 @@ class AuthController extends BaseController
         }
     }
 
+    public function refresh(RequestHelper $request): array
+    {
+        if (!$this->authService instanceof AuthServiceInterface) {
+            return $this->error('Authentication service unavailable.', 503);
+        }
+
+        try {
+            $refreshToken = $this->refreshTokenFromRequest($request);
+
+            if ($refreshToken === null || $refreshToken === '') {
+                return $this->error('Refresh token is required.', 400);
+            }
+
+            $authenticatedUser = $this->authService->refresh($refreshToken);
+
+            return $this->json($this->formatAuthenticatedUser($authenticatedUser), 200);
+        } catch (AuthException $exception) {
+            return $this->error($exception->getMessage(), 401);
+        } catch (Throwable) {
+            return $this->error('Token refresh failed.', 500);
+        }
+    }
+
+    public function profile(RequestHelper $request): array
+    {
+        if (!$this->authService instanceof AuthServiceInterface) {
+            return $this->error('Authentication service unavailable.', 503);
+        }
+
+        try {
+            $user = $this->authService->profile($this->token($request));
+
+            if (!$user instanceof User) {
+                return $this->error('User not found.', 404);
+            }
+
+            return $this->json([
+                'user' => [
+                    'id' => $user->id(),
+                    'name' => $user->name(),
+                    'email' => $user->email(),
+                ],
+            ], 200);
+        } catch (ValidationException $exception) {
+            return $this->error($exception->getMessage(), 422, ['validation' => $exception->errors()]);
+        } catch (AuthException $exception) {
+            return $this->error($exception->getMessage(), 401);
+        } catch (Throwable) {
+            return $this->error('Profile request failed.', 500);
+        }
+    }
+
+    public function changePassword(RequestHelper $request): array
+    {
+        if (!$this->authService instanceof AuthServiceInterface) {
+            return $this->error('Authentication service unavailable.', 503);
+        }
+
+        try {
+            $this->authService->changePassword(new ChangePasswordRequest($this->payload($request)), $this->token($request));
+
+            return $this->json(['message' => 'Password changed successfully.'], 200);
+        } catch (ValidationException $exception) {
+            return $this->error($exception->getMessage(), 422, ['validation' => $exception->errors()]);
+        } catch (AuthException $exception) {
+            return $this->error($exception->getMessage(), 401);
+        } catch (Throwable) {
+            return $this->error('Password change request failed.', 500);
+        }
+    }
+
     private function payload(RequestHelper $request): array
     {
         $json = $request->json();
@@ -113,6 +184,17 @@ class AuthController extends BaseController
                 'email' => $user->email(),
             ] : null,
             'token' => $authenticatedUser->token(),
+            'refresh_token' => $authenticatedUser->refreshToken(),
         ];
+    }
+
+    private function refreshTokenFromRequest(RequestHelper $request): ?string
+    {
+        $payload = $this->payload($request);
+        if (isset($payload['refresh_token']) && is_string($payload['refresh_token'])) {
+            return $payload['refresh_token'];
+        }
+
+        return null;
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Section;
 
 use App\Support\AppContainer;
+use App\AcademicClass\AcademicClassRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class SectionServiceProvider
@@ -14,7 +16,10 @@ class SectionServiceProvider
 
         $validator = new SectionValidator();
         $repository = new SectionRepository($database);
-        $service = new SectionService($repository, $validator);
+        $classRepository = new AcademicClassRepository($database);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new SectionService($repository, $validator, $classRepository, $database, $auditLogger);
         $controller = new SectionController($service);
 
         $container->set(SectionValidator::class, $validator);

@@ -3,6 +3,8 @@
 namespace App\AttendanceRecord;
 
 use App\Support\AppContainer;
+use App\Attendance\AttendanceRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class AttendanceRecordServiceProvider
@@ -14,7 +16,10 @@ class AttendanceRecordServiceProvider
 
         $validator = new AttendanceRecordValidator();
         $repository = new AttendanceRecordRepository($database);
-        $service = new AttendanceRecordService($repository, $validator);
+        $attendanceRepository = new AttendanceRepository($database);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new AttendanceRecordService($repository, $validator, $attendanceRepository, $database, $auditLogger);
         $controller = new AttendanceRecordController($service);
 
         $container->set(AttendanceRecordValidator::class, $validator);

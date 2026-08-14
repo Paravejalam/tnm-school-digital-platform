@@ -3,6 +3,11 @@
 namespace App\Student;
 
 use App\Support\AppContainer;
+use App\AcademicSession\AcademicSessionRepository;
+use App\AcademicClass\AcademicClassRepository;
+use App\Section\SectionRepository;
+use App\Audit\AuditLoggerInterface;
+use App\Auth\UserRepository;
 use PDO;
 
 class StudentServiceProvider
@@ -14,7 +19,13 @@ class StudentServiceProvider
 
         $validator = new StudentValidator();
         $repository = new StudentRepository($database);
-        $service = new StudentService($repository, $validator);
+        $sessionRepository = new AcademicSessionRepository($database);
+        $classRepository = new AcademicClassRepository($database);
+        $sectionRepository = new SectionRepository($database);
+        $userRepository = new UserRepository($database);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new StudentService($repository, $validator, $sessionRepository, $classRepository, $sectionRepository, $userRepository, $database, $auditLogger);
         $controller = new StudentController($service);
 
         $container->set(StudentValidator::class, $validator);

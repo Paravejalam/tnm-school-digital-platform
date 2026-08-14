@@ -3,6 +3,8 @@
 namespace App\Period;
 
 use App\Support\AppContainer;
+use App\Timetable\TimetableRepository;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class PeriodServiceProvider
@@ -14,7 +16,10 @@ class PeriodServiceProvider
 
         $validator = new PeriodValidator();
         $repository = new PeriodRepository($database);
-        $service = new PeriodService($repository, $validator);
+        $timetableRepository = new TimetableRepository($database);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new PeriodService($repository, $validator, $timetableRepository, $database, $auditLogger);
         $controller = new PeriodController($service);
 
         $container->set(PeriodValidator::class, $validator);

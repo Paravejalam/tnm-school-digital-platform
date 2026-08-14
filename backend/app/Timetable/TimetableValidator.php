@@ -6,7 +6,7 @@ use App\Auth\ValidationException;
 
 class TimetableValidator
 {
-    private const STATUSES = ['active', 'inactive'];
+    private const STATUSES = ['active', 'inactive', 'draft'];
 
     public function validateCreate(array $payload): void
     {
@@ -26,7 +26,7 @@ class TimetableValidator
         }
 
         if (array_key_exists('status', $payload) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be active, inactive or draft.';
         }
 
         if ($errors !== []) {
@@ -45,7 +45,7 @@ class TimetableValidator
         }
 
         if (isset($payload['status']) && !$this->validStatus($payload['status'])) {
-            $errors['status'][] = 'Status must be active or inactive.';
+            $errors['status'][] = 'Status must be active, inactive or draft.';
         }
 
         return $errors;

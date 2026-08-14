@@ -9,7 +9,11 @@ class AcademicClass
         private ?string $className = null,
         private ?string $code = null,
         private ?int $academicSessionId = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?int $gradeLevel = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -36,5 +40,25 @@ class AcademicClass
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function gradeLevel(): ?int
+    {
+        return $this->gradeLevel;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }

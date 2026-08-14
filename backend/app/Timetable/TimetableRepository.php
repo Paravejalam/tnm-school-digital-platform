@@ -31,7 +31,7 @@ class TimetableRepository implements TimetableRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status FROM timetables' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status, created_at, updated_at FROM timetables' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class TimetableRepository implements TimetableRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status FROM timetables WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status, created_at, updated_at FROM timetables WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class TimetableRepository implements TimetableRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status FROM timetables WHERE timetable_name = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, timetable_name, academic_session_id, class_id, section_id, subject_id, teacher_id, status, created_at, updated_at FROM timetables WHERE timetable_name = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -155,7 +155,10 @@ class TimetableRepository implements TimetableRepositoryInterface
             isset($row['section_id']) ? (int) $row['section_id'] : null,
             isset($row['subject_id']) ? (int) $row['subject_id'] : null,
             isset($row['teacher_id']) ? (int) $row['teacher_id'] : null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

@@ -27,6 +27,44 @@ class AuthValidator
             $errors['confirm_password'][] = 'Confirm password must match password.';
         }
 
+        $name = (string) ($payload['name'] ?? '');
+        if ($name === '') {
+            $errors['name'][] = 'Name is required.';
+        }
+
+        $role = (string) ($payload['role'] ?? 'student');
+        if ($role !== '' && !in_array($role, ['student', 'teacher'], true)) {
+            $errors['role'][] = 'Role must be student or teacher.';
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException(errors: $errors);
+        }
+    }
+
+    public function validateChangePassword(array $payload): void
+    {
+        $errors = [];
+
+        $current = (string) ($payload['current_password'] ?? '');
+        if ($current === '') {
+            $errors['current_password'][] = 'Current password is required.';
+        }
+
+        $new = (string) ($payload['new_password'] ?? '');
+        if ($new === '') {
+            $errors['new_password'][] = 'New password is required.';
+        } elseif (strlen($new) < self::MIN_PASSWORD_LENGTH) {
+            $errors['new_password'][] = 'New password must be at least ' . self::MIN_PASSWORD_LENGTH . ' characters.';
+        }
+
+        $confirm = (string) ($payload['confirm_password'] ?? '');
+        if ($confirm === '') {
+            $errors['confirm_password'][] = 'Confirm password is required.';
+        } elseif ($new !== '' && $new !== $confirm) {
+            $errors['confirm_password'][] = 'Confirm password must match new password.';
+        }
+
         if ($errors !== []) {
             throw new ValidationException(errors: $errors);
         }

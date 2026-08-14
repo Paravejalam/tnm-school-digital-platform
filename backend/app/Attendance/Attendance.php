@@ -11,7 +11,12 @@ class Attendance
         private ?int $classId = null,
         private ?int $sectionId = null,
         private ?int $studentId = null,
-        private ?string $status = null
+        private ?string $status = null,
+        private ?string $remarks = null,
+        private ?int $markedBy = null,
+        private ?string $createdAt = null,
+        private ?string $updatedAt = null,
+        private ?string $deletedAt = null
     ) {
     }
 
@@ -48,5 +53,30 @@ class Attendance
     public function status(): ?string
     {
         return $this->status;
+    }
+
+    public function remarks(): ?string
+    {
+        return $this->remarks;
+    }
+
+    public function markedBy(): ?int
+    {
+        return $this->markedBy;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->updatedAt;
+    }
+
+    public function deletedAt(): ?string
+    {
+        return $this->deletedAt;
     }
 }

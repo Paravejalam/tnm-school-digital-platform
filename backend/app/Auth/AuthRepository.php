@@ -34,4 +34,19 @@ class AuthRepository implements AuthRepositoryInterface
     {
         $this->tokens->revokeToken($token);
     }
+
+    public function assignRole(int $userId, int $roleId): void
+    {
+        $this->users->assignRole($userId, $roleId);
+    }
+
+    public function findUserRole(int $userId): ?string
+    {
+        return $this->users->findUserRole($userId);
+    }
+
+    public function updatePassword(int $userId, string $passwordHash): void
+    {
+        $this->users->updatePassword($userId, $passwordHash);
+    }
 }

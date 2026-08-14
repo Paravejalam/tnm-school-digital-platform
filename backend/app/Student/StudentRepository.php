@@ -37,7 +37,7 @@ class StudentRepository implements StudentRepositoryInterface
             $total = (int) $count->fetchColumn();
 
             $statement = $this->database->prepare(
-                'SELECT id, admission_number, first_name, last_name, email, phone, class_name, section, status FROM students' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset'
+                'SELECT id, user_id, admission_number, roll_number, first_name, last_name, email, phone, date_of_birth, gender, academic_session_id, class_id, section_id, class_name, section, status, created_at, updated_at FROM students' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset'
             );
 
             foreach ($params as $key => $value) {
@@ -62,7 +62,7 @@ class StudentRepository implements StudentRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, admission_number, first_name, last_name, email, phone, class_name, section, status FROM students WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, user_id, admission_number, roll_number, first_name, last_name, email, phone, date_of_birth, gender, academic_session_id, class_id, section_id, class_name, section, status, created_at, updated_at FROM students WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -79,7 +79,7 @@ class StudentRepository implements StudentRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, admission_number, first_name, last_name, email, phone, class_name, section, status FROM students WHERE admission_number = :admission_number AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, user_id, admission_number, roll_number, first_name, last_name, email, phone, date_of_birth, gender, academic_session_id, class_id, section_id, class_name, section, status, created_at, updated_at FROM students WHERE admission_number = :admission_number AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['admission_number' => $admissionNumber]);
             $row = $statement->fetch();
 
@@ -96,7 +96,7 @@ class StudentRepository implements StudentRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO students (admission_number, first_name, last_name, email, phone, class_name, section, status) VALUES (:admission_number, :first_name, :last_name, :email, :phone, :class_name, :section, :status)');
+            $statement = $this->database->prepare('INSERT INTO students (user_id, admission_number, roll_number, first_name, last_name, email, phone, date_of_birth, gender, academic_session_id, class_id, section_id, class_name, section, status) VALUES (:user_id, :admission_number, :roll_number, :first_name, :last_name, :email, :phone, :date_of_birth, :gender, :academic_session_id, :class_id, :section_id, :class_name, :section, :status)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -114,7 +114,7 @@ class StudentRepository implements StudentRepositoryInterface
 
         try {
             $merged = array_merge($current instanceof Student ? StudentResponse::fromStudent($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE students SET admission_number = :admission_number, first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, class_name = :class_name, section = :section, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $statement = $this->database->prepare('UPDATE students SET user_id = :user_id, admission_number = :admission_number, roll_number = :roll_number, first_name = :first_name, last_name = :last_name, email = :email, phone = :phone, date_of_birth = :date_of_birth, gender = :gender, academic_session_id = :academic_session_id, class_id = :class_id, section_id = :section_id, class_name = :class_name, section = :section, status = :status WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -143,11 +143,18 @@ class StudentRepository implements StudentRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
+            'user_id' => $attributes['user_id'] ?? null,
             'admission_number' => $attributes['admission_number'] ?? null,
+            'roll_number' => $attributes['roll_number'] ?? null,
             'first_name' => $attributes['first_name'] ?? null,
             'last_name' => $attributes['last_name'] ?? null,
             'email' => $attributes['email'] ?? null,
             'phone' => $attributes['phone'] ?? null,
+            'date_of_birth' => $attributes['date_of_birth'] ?? null,
+            'gender' => $attributes['gender'] ?? null,
+            'academic_session_id' => $attributes['academic_session_id'] ?? null,
+            'class_id' => $attributes['class_id'] ?? null,
+            'section_id' => $attributes['section_id'] ?? null,
             'class_name' => $attributes['class_name'] ?? null,
             'section' => $attributes['section'] ?? null,
             'status' => $attributes['status'] ?? 'active',
@@ -165,7 +172,17 @@ class StudentRepository implements StudentRepositoryInterface
             $row['phone'] ?? null,
             $row['class_name'] ?? null,
             $row['section'] ?? null,
-            $row['status'] ?? 'active'
+            $row['status'] ?? 'active',
+            isset($row['user_id']) ? (int) $row['user_id'] : null,
+            $row['roll_number'] ?? null,
+            $row['date_of_birth'] ?? null,
+            $row['gender'] ?? null,
+            isset($row['academic_session_id']) ? (int) $row['academic_session_id'] : null,
+            isset($row['class_id']) ? (int) $row['class_id'] : null,
+            isset($row['section_id']) ? (int) $row['section_id'] : null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

@@ -22,7 +22,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
             $params = [];
 
             if ($search !== null) {
-                $filters[] = 'record_name LIKE :search';
+                $filters[] = 'note LIKE :search';
                 $params['search'] = '%' . $search . '%';
             }
 
@@ -31,7 +31,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
             $count->execute($params);
             $total = (int) $count->fetchColumn();
 
-            $statement = $this->database->prepare('SELECT id, record_name, attendance_id, student_id, status FROM attendance_records' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
+            $statement = $this->database->prepare('SELECT id, attendance_id, status, note, recorded_by, recorded_at, created_at, updated_at FROM attendance_records' . $where . ' ORDER BY id DESC LIMIT :limit OFFSET :offset');
             foreach ($params as $key => $value) {
                 $statement->bindValue(':' . $key, $value);
             }
@@ -54,7 +54,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, record_name, attendance_id, student_id, status FROM attendance_records WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, attendance_id, status, note, recorded_by, recorded_at, created_at, updated_at FROM attendance_records WHERE id = :id AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['id' => $id]);
             $row = $statement->fetch();
 
@@ -71,7 +71,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('SELECT id, record_name, attendance_id, student_id, status FROM attendance_records WHERE record_name = :name AND deleted_at IS NULL LIMIT 1');
+            $statement = $this->database->prepare('SELECT id, attendance_id, status, note, recorded_by, recorded_at, created_at, updated_at FROM attendance_records WHERE note = :name AND deleted_at IS NULL LIMIT 1');
             $statement->execute(['name' => $name]);
             $row = $statement->fetch();
 
@@ -88,7 +88,7 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
         }
 
         try {
-            $statement = $this->database->prepare('INSERT INTO attendance_records (record_name, attendance_id, student_id, status) VALUES (:record_name, :attendance_id, :student_id, :status)');
+            $statement = $this->database->prepare('INSERT INTO attendance_records (attendance_id, status, note, recorded_by) VALUES (:attendance_id, :status, :note, :recorded_by)');
             $statement->execute($this->attributes($attributes));
             $attributes['id'] = (int) $this->database->lastInsertId();
         } catch (Throwable) {
@@ -105,8 +105,13 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
         }
 
         try {
-            $merged = array_merge($current instanceof AttendanceRecord ? AttendanceRecordResponse::fromEntity($current) : [], $attributes);
-            $statement = $this->database->prepare('UPDATE attendance_records SET record_name = :record_name, attendance_id = :attendance_id, student_id = :student_id, status = :status WHERE id = :id AND deleted_at IS NULL');
+            $merged = array_merge($current instanceof AttendanceRecord ? [
+                'attendance_id' => $current->attendanceId(),
+                'status' => $current->status(),
+                'note' => $current->note(),
+                'recorded_by' => $current->recordedBy(),
+            ] : [], $attributes);
+            $statement = $this->database->prepare('UPDATE attendance_records SET attendance_id = :attendance_id, status = :status, note = :note, recorded_by = :recorded_by WHERE id = :id AND deleted_at IS NULL');
             $params = $this->attributes($merged);
             $params['id'] = $id;
             $statement->execute($params);
@@ -135,10 +140,10 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
     private function attributes(array $attributes): array
     {
         return [
-            'record_name' => $attributes['record_name'] ?? null,
             'attendance_id' => $attributes['attendance_id'] ?? null,
-            'student_id' => $attributes['student_id'] ?? null,
-            'status' => $attributes['status'] ?? 'active',
+            'status' => $attributes['status'] ?? 'present',
+            'note' => $attributes['note'] ?? null,
+            'recorded_by' => $attributes['recorded_by'] ?? null,
         ];
     }
 
@@ -146,10 +151,16 @@ class AttendanceRecordRepository implements AttendanceRecordRepositoryInterface
     {
         return new AttendanceRecord(
             isset($row['id']) ? (int) $row['id'] : null,
-            $row['record_name'] ?? null,
+            null,
             isset($row['attendance_id']) ? (int) $row['attendance_id'] : null,
-            isset($row['student_id']) ? (int) $row['student_id'] : null,
-            $row['status'] ?? 'active'
+            null,
+            $row['status'] ?? 'present',
+            $row['note'] ?? null,
+            isset($row['recorded_by']) ? (int) $row['recorded_by'] : null,
+            $row['recorded_at'] ?? null,
+            $row['created_at'] ?? null,
+            $row['updated_at'] ?? null,
+            null,
         );
     }
 }

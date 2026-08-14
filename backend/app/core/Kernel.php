@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 declare(strict_types=1);
 
@@ -8,8 +8,10 @@ use App\AcademicClass\AcademicClassServiceProvider;
 use App\AcademicSession\AcademicSessionServiceProvider;
 use App\Attendance\AttendanceServiceProvider;
 use App\AttendanceRecord\AttendanceRecordServiceProvider;
+use App\Audit\AuditLogServiceProvider;
 use App\Auth\AuthMiddleware;
 use App\Auth\AuthServiceProvider;
+use App\Auth\RbacMiddleware;
 use App\Config\ConfigLoader;
 use App\Config\EnvironmentLoader;
 use App\Database\ConnectionManager;
@@ -17,14 +19,18 @@ use App\HolidayCalendar\HolidayCalendarServiceProvider;
 use App\Http\Pipeline;
 use App\Http\RequestHelper;
 use App\Period\PeriodServiceProvider;
+use App\Permission\PermissionServiceProvider;
+use App\Role\RoleServiceProvider;
 use App\Section\SectionServiceProvider;
 use App\Student\StudentServiceProvider;
 use App\Subject\SubjectServiceProvider;
 use App\Support\AppContainer;
 use App\Support\ErrorHandler;
 use App\Support\Logger;
+use App\SystemSetting\SystemSettingServiceProvider;
 use App\Teacher\TeacherServiceProvider;
 use App\Timetable\TimetableServiceProvider;
+use App\User\UserServiceProvider;
 use PDO;
 use Throwable;
 
@@ -105,6 +111,7 @@ class Kernel
 
         // 9. Domain module service providers
         (new AuthServiceProvider())->register($this->container);
+        (new AuditLogServiceProvider())->register($this->container);
         (new StudentServiceProvider())->register($this->container);
         (new TeacherServiceProvider())->register($this->container);
         (new AcademicSessionServiceProvider())->register($this->container);
@@ -116,6 +123,10 @@ class Kernel
         (new TimetableServiceProvider())->register($this->container);
         (new PeriodServiceProvider())->register($this->container);
         (new HolidayCalendarServiceProvider())->register($this->container);
+        (new SystemSettingServiceProvider())->register($this->container);
+        (new UserServiceProvider())->register($this->container);
+        (new RoleServiceProvider())->register($this->container);
+        (new PermissionServiceProvider())->register($this->container);
 
         // 10. Router
         $this->container->set('router', new Router($this->container));
@@ -197,8 +208,8 @@ class Kernel
      * Return the middleware stack for a given request.
      *
      * Protected route prefixes require AuthMiddleware.
+     * RbacMiddleware executes after AuthMiddleware for permission enforcement.
      * Future: rate limiting middleware hook here.
-     * Future: RBAC middleware hook here (after Auth).
      */
     private function middlewareFor(RequestHelper $request): array
     {
@@ -217,9 +228,16 @@ class Kernel
             '/timetables',
             '/periods',
             '/holiday-calendars',
+            '/settings',
+            '/audit-logs',
+            '/users',
+            '/roles',
+            '/permissions',
         ];
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';
+        $requiresAuth = $requiresAuth || ($method === 'GET' && $path === '/auth/profile');
+        $requiresAuth = $requiresAuth || ($method === 'PUT' && $path === '/auth/change-password');
 
         if (!$requiresAuth) {
             foreach ($protectedPrefixes as $prefix) {
@@ -234,14 +252,20 @@ class Kernel
             return [];
         }
 
-        $middleware = $this->container->get(AuthMiddleware::class);
+        $stack = [];
+
+        $authMiddleware = $this->container->get(AuthMiddleware::class);
+        if ($authMiddleware instanceof AuthMiddleware) {
+            $stack[] = $authMiddleware;
+        }
 
         // Future hook: rate limiting middleware
-        // $rateLimiter = $this->container->get(RateLimitMiddleware::class);
 
-        // Future hook: RBAC middleware
-        // $rbac = $this->container->get(RbacMiddleware::class);
+        $rbacMiddleware = $this->container->get(RbacMiddleware::class);
+        if ($rbacMiddleware instanceof RbacMiddleware) {
+            $stack[] = $rbacMiddleware;
+        }
 
-        return $middleware instanceof AuthMiddleware ? [$middleware] : [];
+        return $stack;
     }
 }

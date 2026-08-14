@@ -6,9 +6,15 @@ use App\Auth\ValidationException;
 
 class StudentValidator
 {
+    private const STATUSES = ['active', 'inactive', 'graduated', 'transferred', 'withdrawn'];
+
     public function validateCreate(array $payload): void
     {
         $errors = $this->validateRequired($payload);
+
+        if (array_key_exists('status', $payload) && !$this->validStatus($payload['status'])) {
+            $errors['status'][] = 'Status must be active, inactive, graduated, transferred or withdrawn.';
+        }
 
         if ($errors !== []) {
             throw new ValidationException(errors: $errors);
@@ -27,6 +33,10 @@ class StudentValidator
 
         if (array_key_exists('admission_number', $payload) && trim((string) $payload['admission_number']) === '') {
             $errors['admission_number'][] = 'Admission number cannot be empty.';
+        }
+
+        if (isset($payload['status']) && !$this->validStatus($payload['status'])) {
+            $errors['status'][] = 'Status must be active, inactive, graduated, transferred or withdrawn.';
         }
 
         if ($errors !== []) {
@@ -49,5 +59,10 @@ class StudentValidator
         }
 
         return $errors;
+    }
+
+    private function validStatus(mixed $status): bool
+    {
+        return in_array((string) $status, self::STATUSES, true);
     }
 }

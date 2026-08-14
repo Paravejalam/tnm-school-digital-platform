@@ -68,6 +68,56 @@ class UserRepository implements UserRepositoryInterface
         return $this->mapUser($attributes);
     }
 
+    public function assignRole(int $userId, int $roleId): void
+    {
+        $statement = $this->database->prepare(
+            'INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)'
+        );
+        $statement->execute([
+            'user_id' => $userId,
+            'role_id' => $roleId,
+        ]);
+    }
+
+    public function findUserRole(int $userId): ?string
+    {
+        if (!$this->database instanceof PDO) {
+            return null;
+        }
+
+        try {
+            $statement = $this->database->prepare(
+                'SELECT r.slug
+                 FROM user_roles ur
+                 INNER JOIN roles r ON ur.role_id = r.id
+                 WHERE ur.user_id = :user_id
+                 LIMIT 1'
+            );
+            $statement->execute(['user_id' => $userId]);
+            $row = $statement->fetch();
+
+            return is_array($row) && isset($row['slug']) ? (string) $row['slug'] : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    public function updatePassword(int $userId, string $passwordHash): void
+    {
+        if (!$this->database instanceof PDO) {
+            return;
+        }
+
+        try {
+            $statement = $this->database->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+            $statement->execute([
+                'password_hash' => $passwordHash,
+                'id' => $userId,
+            ]);
+        } catch (Throwable) {
+        }
+    }
+
     private function mapUser(array $row): User
     {
         return new User(

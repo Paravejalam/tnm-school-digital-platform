@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 declare(strict_types=1);
 
@@ -8,17 +8,22 @@ use App\AcademicClass\AcademicClassController;
 use App\AcademicSession\AcademicSessionController;
 use App\Attendance\AttendanceController;
 use App\AttendanceRecord\AttendanceRecordController;
+use App\Audit\AuditLogController;
 use App\Auth\AuthController;
 use App\Http\RequestHelper;
 use App\Http\ResponseHelper;
 use App\HolidayCalendar\HolidayCalendarController;
 use App\Period\PeriodController;
+use App\Permission\PermissionController;
+use App\Role\RoleController;
 use App\Section\SectionController;
 use App\Student\StudentController;
 use App\Subject\SubjectController;
 use App\Support\AppContainer;
+use App\SystemSetting\SystemSettingController;
 use App\Teacher\TeacherController;
 use App\Timetable\TimetableController;
+use App\User\UserController;
 
 /**
  * Application Router
@@ -87,6 +92,18 @@ class Router
             return $this->authController()->logout($this->req($request));
         }
 
+        if ($m === 'POST' && $p === '/auth/refresh') {
+            return $this->authController()->refresh($this->req($request));
+        }
+
+        if ($m === 'GET' && $p === '/auth/profile') {
+            return $this->authController()->profile($this->req($request));
+        }
+
+        if ($m === 'PUT' && $p === '/auth/change-password') {
+            return $this->authController()->changePassword($this->req($request));
+        }
+
         // ------------------------------------------------------------------
         // Resource routes (protected — AuthMiddleware applied via Kernel)
         // ------------------------------------------------------------------
@@ -153,6 +170,12 @@ class Router
             '/timetables'        => [TimetableController::class,        'timetable.controller'],
             '/periods'           => [PeriodController::class,           'period.controller'],
             '/holiday-calendars' => [HolidayCalendarController::class,  'holidaycalendar.controller'],
+            '/settings'          => [SystemSettingController::class,    'systemsetting.controller'],
+        '/system-settings' => [SystemSettingController::class, 'systemsetting.controller'],
+            '/audit-logs'        => [AuditLogController::class,          'audit.controller'],
+            '/users'             => [UserController::class,              'user.controller'],
+            '/roles'             => [RoleController::class,              'role.controller'],
+            '/permissions'       => [PermissionController::class,        'permission.controller'],
         ];
 
         foreach ($map as $basePath => [$className, $serviceKey]) {

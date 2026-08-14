@@ -17,16 +17,13 @@ class TokenRepository implements TokenRepositoryInterface
             return;
         }
 
-        try {
-            $statement = $this->database->prepare(
-                'INSERT INTO auth_tokens (user_id, token, revoked, created_at) VALUES (:user_id, :token, 0, NOW())'
-            );
-            $statement->execute([
-                'user_id' => $user->id(),
-                'token' => $token,
-            ]);
-        } catch (Throwable) {
-        }
+        $statement = $this->database->prepare(
+            'INSERT INTO auth_tokens (user_id, token, revoked, created_at) VALUES (:user_id, :token, 0, NOW())'
+        );
+        $statement->execute([
+            'user_id' => $user->id(),
+            'token'   => $token,
+        ]);
     }
 
     public function revokeToken(string $token): void

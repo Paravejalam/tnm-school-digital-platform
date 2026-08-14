@@ -3,6 +3,7 @@
 namespace App\Subject;
 
 use App\Support\AppContainer;
+use App\Audit\AuditLoggerInterface;
 use PDO;
 
 class SubjectServiceProvider
@@ -14,7 +15,9 @@ class SubjectServiceProvider
 
         $validator = new SubjectValidator();
         $repository = new SubjectRepository($database);
-        $service = new SubjectService($repository, $validator);
+        $auditLogger = $container->get(AuditLoggerInterface::class);
+        $auditLogger = $auditLogger instanceof AuditLoggerInterface ? $auditLogger : null;
+        $service = new SubjectService($repository, $validator, $database, $auditLogger);
         $controller = new SubjectController($service);
 
         $container->set(SubjectValidator::class, $validator);
