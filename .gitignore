@@ -6,3 +6,8 @@ vendor/
 apps/erp/.next/
 apps/erp/*.log
 apps/erp/*.tsbuildinfo
+
+# Public website generated files
+apps/website/.next/
+apps/website/*.log
+apps/website/*.tsbuildinfo
