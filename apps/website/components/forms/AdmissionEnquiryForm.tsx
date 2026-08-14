@@ -1,0 +1,20 @@
+'use client';
+
+import React from 'react';
+import type { AdmissionEnquiryValues } from '../../types/forms';
+
+const initialValues: AdmissionEnquiryValues = { guardianName: '', studentName: '', email: '', message: '' };
+
+export default function AdmissionEnquiryForm() {
+  const [values, setValues] = React.useState<AdmissionEnquiryValues>(initialValues);
+  const [errors, setErrors] = React.useState<Partial<Record<keyof AdmissionEnquiryValues, string>>>({});
+  const [notice, setNotice] = React.useState<string | null>(null);
+
+  function update(field: keyof AdmissionEnquiryValues, value: string) { setValues((current) => ({ ...current, [field]: value })); setErrors((current) => ({ ...current, [field]: undefined })); setNotice(null); }
+  function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const nextErrors: Partial<Record<keyof AdmissionEnquiryValues, string>> = {}; if (!values.guardianName.trim()) nextErrors.guardianName = 'Please enter a parent or guardian name.'; if (!values.studentName.trim()) nextErrors.studentName = 'Please enter the student name.'; if (!/^\S+@\S+\.\S+$/.test(values.email.trim())) nextErrors.email = 'Please enter a valid email address.'; if (!values.message.trim()) nextErrors.message = 'Please enter your enquiry.'; setErrors(nextErrors); if (Object.keys(nextErrors).length === 0) setNotice('This enquiry was not sent. The public admissions service has not yet been approved or connected.'); }
+
+  return <form onSubmit={submit} noValidate className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:p-8"><div><h2 className="text-2xl font-bold text-ink">Admission enquiry</h2><p className="mt-2 text-sm leading-6 text-slate-600">Use this interface once the school approves a public admissions submission service. No information is transmitted now.</p></div>{notice && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">{notice}</div>}<div className="grid gap-5 sm:grid-cols-2"><Field id="guardian-name" label="Parent or guardian name" error={errors.guardianName}><input id="guardian-name" value={values.guardianName} onChange={(event) => update('guardianName', event.target.value)} aria-invalid={Boolean(errors.guardianName)} className={inputClass(Boolean(errors.guardianName))} /></Field><Field id="student-name" label="Student name" error={errors.studentName}><input id="student-name" value={values.studentName} onChange={(event) => update('studentName', event.target.value)} aria-invalid={Boolean(errors.studentName)} className={inputClass(Boolean(errors.studentName))} /></Field></div><Field id="admission-email" label="Email address" error={errors.email}><input id="admission-email" type="email" value={values.email} onChange={(event) => update('email', event.target.value)} aria-invalid={Boolean(errors.email)} className={inputClass(Boolean(errors.email))} /></Field><Field id="admission-message" label="Your enquiry" error={errors.message}><textarea id="admission-message" rows={5} value={values.message} onChange={(event) => update('message', event.target.value)} aria-invalid={Boolean(errors.message)} className={inputClass(Boolean(errors.message))} /></Field><button type="submit" className="rounded-full bg-navy px-5 py-3 text-sm font-bold text-white transition hover:bg-ink focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2">Prepare enquiry</button></form>;
+}
+
+function inputClass(hasError: boolean) { return `w-full rounded-xl border ${hasError ? 'border-red-400' : 'border-slate-200'} bg-slate-50 px-4 py-3 text-sm text-ink outline-none transition focus:border-teal-700 focus:bg-white focus:ring-2 focus:ring-teal-700/10`; }
+function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) { return <div><label htmlFor={id} className="block text-sm font-bold text-ink">{label}</label><div className="mt-2">{children}</div>{error && <p className="mt-1 text-xs text-red-700">{error}</p>}</div>; }
