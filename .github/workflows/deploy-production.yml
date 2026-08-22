@@ -1,0 +1,299 @@
+# =============================================================================
+# T.N. Memorial Public School Digital Platform
+# GitHub Actions — Production Deployment (CD)
+# =============================================================================
+#
+# Trigger: push to main ONLY
+# Environment: production (requires GitHub Environment secrets)
+# Target: VPS via SSH + Docker Compose
+#
+# Required GitHub Environment Secrets:
+#   VPS_HOST            — VPS IP address or hostname
+#   VPS_USER            — SSH user on VPS
+#   VPS_SSH_PRIVATE_KEY — SSH private key for VPS access
+#   VPS_PORT            — SSH port (default: 22)
+#
+# Required GitHub Environment Variables:
+#   DEPLOY_PATH         — Absolute path to repo on VPS (e.g., /opt/tnm-school)
+# =============================================================================
+
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+
+  # ===========================================================================
+  # Job 1: CI Gate — Must pass before deployment
+  # ===========================================================================
+  ci-gate:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
+  # ===========================================================================
+  # Job 2: Deploy to VPS
+  # ===========================================================================
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    needs: ci-gate
+    environment: production
+    steps:
+
+      - name: Validate deployment secrets
+        run: |
+          set -euo pipefail
+          MISSING=""
+          if [ -z "${{ secrets.VPS_HOST }}" ]; then MISSING="$MISSING VPS_HOST"; fi
+          if [ -z "${{ secrets.VPS_USER }}" ]; then MISSING="$MISSING VPS_USER"; fi
+          if [ -z "${{ secrets.VPS_SSH_PRIVATE_KEY }}" ]; then MISSING="$MISSING VPS_SSH_PRIVATE_KEY"; fi
+          if [ -n "$MISSING" ]; then
+            echo "::error::Production deployment is blocked because the required GitHub production environment secrets are not configured:$MISSING"
+            exit 1
+          fi
+          echo "All required deployment secrets are configured"
+
+      - name: Setup SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          VPS_PORT="${{ secrets.VPS_PORT }}"
+          VPS_PORT="${VPS_PORT:-22}"
+
+          ssh-keyscan -p "$VPS_PORT" -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          chmod 644 ~/.ssh/known_hosts
+
+          cat > ~/.ssh/config <<SSHEOF
+          Host production
+            HostName ${{ secrets.VPS_HOST }}
+            User ${{ secrets.VPS_USER }}
+            Port $VPS_PORT
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 30
+          SSHEOF
+          chmod 600 ~/.ssh/config
+
+      - name: Deploy to VPS
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          DEPLOY_DIR="${DEPLOY_PATH:-/opt/tnm-school}"
+
+          ssh production /bin/bash <<REMOTEOF
+          set -euo pipefail
+
+          echo "=========================================="
+          echo "T.N. Memorial School — Production Deploy"
+          echo "Commit: ${DEPLOY_COMMIT}"
+          echo "=========================================="
+
+          # ------------------------------------------------------------------
+          # 1. Validate environment
+          # ------------------------------------------------------------------
+          if ! command -v docker &> /dev/null; then
+            echo "::error::Docker is not installed on VPS"
+            exit 1
+          fi
+
+          if ! docker compose version &> /dev/null; then
+            echo "::error::Docker Compose V2 is not available on VPS"
+            exit 1
+          fi
+
+          # ------------------------------------------------------------------
+          # 2. Navigate to deployment directory
+          # ------------------------------------------------------------------
+          if [ ! -d "${DEPLOY_DIR}" ]; then
+            echo "::error::Deployment directory does not exist: ${DEPLOY_DIR}"
+            exit 1
+          fi
+          cd "${DEPLOY_DIR}"
+
+          # ------------------------------------------------------------------
+          # 3. Record current revision for rollback
+          # ------------------------------------------------------------------
+          PREVIOUS_SHA=\$(git rev-parse HEAD 2>/dev/null || echo "none")
+          echo "Previous revision: \${PREVIOUS_SHA}"
+          echo "Target revision:   ${DEPLOY_COMMIT}"
+
+          # ------------------------------------------------------------------
+          # 4. Fetch and checkout target commit
+          # ------------------------------------------------------------------
+          git fetch origin --prune
+          git checkout main
+          git reset --hard origin/main
+
+          CURRENT_SHA=\$(git rev-parse HEAD)
+          echo "Checked out: \${CURRENT_SHA}"
+
+          # ------------------------------------------------------------------
+          # 5. Validate production .env
+          # ------------------------------------------------------------------
+          if [ ! -f "deployment/docker/.env" ]; then
+            echo "::error::Production .env file is missing at deployment/docker/.env"
+            echo "Deployment cannot proceed without environment configuration."
+            exit 1
+          fi
+
+          # Verify critical variables exist (without printing values)
+          for var in APP_ENV DB_NAME DB_USER DB_PASSWORD JWT_SECRET MYSQL_ROOT_PASSWORD; do
+            if ! grep -q "^\${var}=" deployment/docker/.env; then
+              echo "::error::Missing required variable \${var} in .env"
+              exit 1
+            fi
+          done
+          echo "Production .env validated"
+
+          # ------------------------------------------------------------------
+          # 6. Validate Docker Compose config
+          # ------------------------------------------------------------------
+          docker compose \
+            --env-file deployment/docker/.env \
+            -f deployment/docker/docker-compose.yml \
+            config --quiet
+
+          echo "Docker Compose configuration valid"
+
+          # ------------------------------------------------------------------
+          # 7. Build and deploy services (safe — no down, preserves volumes)
+          # ------------------------------------------------------------------
+          docker compose \
+            --env-file deployment/docker/.env \
+            -f deployment/docker/docker-compose.yml \
+            up -d --build --remove-orphans
+
+          echo "Services deployed, waiting for health..."
+
+          # ------------------------------------------------------------------
+          # 8. Wait for health checks (up to 120 seconds)
+          # ------------------------------------------------------------------
+          MAX_WAIT=120
+          INTERVAL=10
+          ELAPSED=0
+          while [ \$ELAPSED -lt \$MAX_WAIT ]; do
+            HEALTHY=\$(docker compose \
+              --env-file deployment/docker/.env \
+              -f deployment/docker/docker-compose.yml \
+              ps --format json 2>/dev/null \
+              | grep -c '"healthy"' || echo "0")
+
+            echo "  [\${ELAPSED}s] Healthy services: \${HEALTHY}/6"
+
+            if [ "\$HEALTHY" -ge 6 ]; then
+              echo "All 6 services healthy"
+              break
+            fi
+
+            sleep \$INTERVAL
+            ELAPSED=\$((ELAPSED + INTERVAL))
+          done
+
+          if [ "\$HEALTHY" -lt 6 ]; then
+            echo "::error::Not all services became healthy within \${MAX_WAIT}s"
+            docker compose \
+              --env-file deployment/docker/.env \
+              -f deployment/docker/docker-compose.yml \
+              ps
+            docker compose \
+              --env-file deployment/docker/.env \
+              -f deployment/docker/docker-compose.yml \
+              logs --tail=30
+            exit 1
+          fi
+
+          # ------------------------------------------------------------------
+          # 9. HTTP smoke tests
+          # ------------------------------------------------------------------
+          SMOKE_FAIL=0
+
+          check_http() {
+            local url="\$1"
+            local expected="\$2"
+            local label="\$3"
+            local code
+            code=\$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "\$url" || echo "000")
+            if [ "\$code" = "\$expected" ]; then
+              echo "  PASS \$label -> \$code"
+            else
+              echo "  FAIL \$label -> \$code (expected \$expected)"
+              SMOKE_FAIL=1
+            fi
+          }
+
+          echo "Running smoke tests..."
+          check_http "http://localhost/"              "200" "GET /"
+          check_http "http://localhost/api/health"    "200" "GET /api/health"
+          check_http "http://localhost/website/"      "200" "GET /website/"
+          check_http "http://localhost/erp/"          "200" "GET /erp/"
+          check_http "http://localhost/api/does-not-exist" "404" "GET /api/does-not-exist"
+          check_http "http://localhost/api/students"  "401" "GET /api/students"
+          check_http "http://localhost/api/auth/profile" "401" "GET /api/auth/profile"
+
+          # Security paths
+          check_http "http://localhost/.env"          "404" "GET /.env"
+          check_http "http://localhost/config/app.php" "404" "GET /config/app.php"
+
+          # Security headers
+          HEADERS=\$(curl -s -D - -o /dev/null --max-time 10 http://localhost/api/health)
+          for hdr in "X-Frame-Options" "X-Content-Type-Options" "Referrer-Policy" "Strict-Transport-Security"; do
+            if echo "\$HEADERS" | grep -qi "\$hdr"; then
+              echo "  PASS Header: \$hdr"
+            else
+              echo "  FAIL Header: \$hdr missing"
+              SMOKE_FAIL=1
+            fi
+          done
+
+          if [ "\$SMOKE_FAIL" -ne 0 ]; then
+            echo "::error::Smoke tests failed — initiating rollback"
+
+            # ----------------------------------------------------------------
+            # ROLLBACK
+            # ----------------------------------------------------------------
+            echo "Rolling back to \${PREVIOUS_SHA}..."
+            if [ "\${PREVIOUS_SHA}" != "none" ]; then
+              git checkout main
+              git reset --hard "\${PREVIOUS_SHA}"
+
+              docker compose \
+                --env-file deployment/docker/.env \
+                -f deployment/docker/docker-compose.yml \
+                up -d --build --remove-orphans
+
+              sleep 30
+
+              ROLLBACK_CODE=\$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost/api/health || echo "000")
+              if [ "\$ROLLBACK_CODE" = "200" ]; then
+                echo "Rollback successful — /api/health returns 200"
+              else
+                echo "::error::Rollback health check failed: \$ROLLBACK_CODE"
+              fi
+            else
+              echo "::warning::No previous revision available for rollback"
+            fi
+            exit 1
+          fi
+
+          echo "=========================================="
+          echo "DEPLOYMENT SUCCESSFUL"
+          echo "Commit: \${CURRENT_SHA}"
+          echo "=========================================="
+          REMOTEOF
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -rf ~/.ssh/deploy_key
