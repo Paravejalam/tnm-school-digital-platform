@@ -6,6 +6,7 @@ namespace App\Core;
 
 use App\AcademicClass\AcademicClassController;
 use App\AcademicSession\AcademicSessionController;
+use App\AdmissionEnquiry\AdmissionEnquiryController;
 use App\Attendance\AttendanceController;
 use App\AttendanceRecord\AttendanceRecordController;
 use App\Audit\AuditLogController;
@@ -160,6 +161,7 @@ class Router
     {
         $map = [
             '/students'          => [StudentController::class,         'student.controller'],
+            '/admission-enquiries' => [AdmissionEnquiryController::class, 'admissionenquiry.controller'],
             '/teachers'          => [TeacherController::class,          'teacher.controller'],
             '/academic-sessions' => [AcademicSessionController::class,  'academicsession.controller'],
             '/classes'           => [AcademicClassController::class,    'academicclass.controller'],

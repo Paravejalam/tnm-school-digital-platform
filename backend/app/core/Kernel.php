@@ -6,6 +6,7 @@ namespace App\Core;
 
 use App\AcademicClass\AcademicClassServiceProvider;
 use App\AcademicSession\AcademicSessionServiceProvider;
+use App\AdmissionEnquiry\AdmissionEnquiryServiceProvider;
 use App\Attendance\AttendanceServiceProvider;
 use App\AttendanceRecord\AttendanceRecordServiceProvider;
 use App\Audit\AuditLogServiceProvider;
@@ -113,6 +114,7 @@ class Kernel
         (new AuthServiceProvider())->register($this->container);
         (new AuditLogServiceProvider())->register($this->container);
         (new StudentServiceProvider())->register($this->container);
+        (new AdmissionEnquiryServiceProvider())->register($this->container);
         (new TeacherServiceProvider())->register($this->container);
         (new AcademicSessionServiceProvider())->register($this->container);
         (new AcademicClassServiceProvider())->register($this->container);
@@ -218,6 +220,7 @@ class Kernel
 
         $protectedPrefixes = [
             '/students',
+            '/admission-enquiries',
             '/teachers',
             '/academic-sessions',
             '/classes',
@@ -234,6 +237,10 @@ class Kernel
             '/roles',
             '/permissions',
         ];
+
+        if ($method === 'POST' && $path === '/admission-enquiries') {
+            return [];
+        }
 
         $requiresAuth = $method === 'POST' && $path === '/auth/logout';
         $requiresAuth = $requiresAuth || ($method === 'GET' && $path === '/auth/profile');

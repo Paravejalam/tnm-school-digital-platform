@@ -14,6 +14,7 @@ class RbacMiddleware
 {
     private const RESOURCE_PERMISSION_PREFIX = [
         '/students'           => 'students',
+        '/admission-enquiries' => 'admission-enquiries',
         '/teachers'           => 'teachers',
         '/academic-sessions'  => 'academic-sessions',
         '/classes'            => 'classes',

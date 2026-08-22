@@ -11,3 +11,12 @@ apps/erp/*.tsbuildinfo
 apps/website/.next/
 apps/website/*.log
 apps/website/*.tsbuildinfo
+
+# Backend runtime logs
+backend/logs/*.log
+
+# Local backup and temp artifacts
+*.bak
+*.backup
+*.backup-*
+deployment/docker/out.txt

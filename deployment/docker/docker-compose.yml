@@ -16,8 +16,8 @@ services:
   # ---------------------------------------------------------------------------
   php:
     build:
-      context: .
-      dockerfile: Dockerfile.php
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.php
     container_name: tnm_php
     restart: unless-stopped
     volumes:
@@ -35,6 +35,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_CHARSET: utf8mb4
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL}
     depends_on:
       mysql:
         condition: service_healthy
@@ -50,8 +53,8 @@ services:
   # ---------------------------------------------------------------------------
   nginx:
     build:
-      context: .
-      dockerfile: Dockerfile.nginx
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.nginx
     container_name: tnm_nginx
     restart: unless-stopped
     ports:
@@ -80,25 +83,22 @@ services:
   # ---------------------------------------------------------------------------
   website:
     build:
-      context: .
-      dockerfile: Dockerfile.node
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.node
       args:
         APP_DIR: apps/website
     container_name: tnm_website
     restart: unless-stopped
     ports:
       - "3000:3000"
-    volumes:
-      - ../../apps/website:/app
-      - node_modules_website:/app/node_modules
     networks:
       - tnm-network
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       PORT: 3000
     working_dir: /app
-    command: npm run dev
+    command: npm run start -- -p 3000
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 30s
@@ -111,25 +111,22 @@ services:
   # ---------------------------------------------------------------------------
   erp:
     build:
-      context: .
-      dockerfile: Dockerfile.node
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.node
       args:
         APP_DIR: apps/erp
     container_name: tnm_erp
     restart: unless-stopped
     ports:
       - "3001:3001"
-    volumes:
-      - ../../apps/erp:/app
-      - node_modules_erp:/app/node_modules
     networks:
       - tnm-network
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       PORT: 3001
     working_dir: /app
-    command: npm run dev -- -p 3001
+    command: npm run start -- -p 3001
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001"]
       interval: 30s
@@ -187,7 +184,7 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -213,3 +210,10 @@ networks:
   tnm-network:
     driver: bridge
     name: tnm-network
+
+
+
+
+
+
+
