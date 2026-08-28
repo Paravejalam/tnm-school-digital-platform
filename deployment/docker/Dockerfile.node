@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # T.N. Memorial Public School Digital Platform
 # Dockerfile.node — Node 22 Frontend Runtime
 # =============================================================================
@@ -10,6 +10,7 @@ LABEL description="Node 22 frontend runtime for TNM School Digital Platform"
 LABEL version="1.0.0"
 
 ARG APP_DIR=apps/website
+ARG NEXT_PUBLIC_API_URL=http://localhost/api
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -25,6 +26,9 @@ COPY ${APP_DIR}/package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY ${APP_DIR}/ .
+
+# Next.js bakes NEXT_PUBLIC_* env vars into the client JS bundle at build time
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 RUN npm run build
 

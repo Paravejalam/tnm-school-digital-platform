@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  assetPrefix: '/erp',
+  basePath: '/erp',
 };
 
 module.exports = nextConfig;

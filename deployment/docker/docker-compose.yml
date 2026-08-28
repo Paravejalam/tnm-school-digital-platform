@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # T.N. Memorial Public School Digital Platform
 # Docker Compose — Local Development Environment
 # Version: 1.0.0
@@ -87,6 +87,7 @@ services:
       dockerfile: deployment/docker/Dockerfile.node
       args:
         APP_DIR: apps/website
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: tnm_website
     restart: unless-stopped
     ports:
@@ -100,7 +101,7 @@ services:
     working_dir: /app
     command: npm run start -- -p 3000
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/website"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -115,6 +116,7 @@ services:
       dockerfile: deployment/docker/Dockerfile.node
       args:
         APP_DIR: apps/erp
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: tnm_erp
     restart: unless-stopped
     ports:
@@ -128,7 +130,7 @@ services:
     working_dir: /app
     command: npm run start -- -p 3001
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/erp"]
       interval: 30s
       timeout: 10s
       retries: 5
